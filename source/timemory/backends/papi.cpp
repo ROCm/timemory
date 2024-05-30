@@ -430,13 +430,12 @@ available_events_info()
             string_t _rm = "papi_";
             auto     idx = _pysym.find(_rm);
             if(idx != string_t::npos)
-                _pysym.substr(idx + _rm.length());
-            evts.push_back(hardware_counters::info(
-                _avail, hardware_counters::api::papi, i, PAPI_PRESET_MASK, _sym, _pysym,
-                info.short_descr, info.long_descr,
-                // get_timemory_papi_presets()[i].short_descr,
-                // get_timemory_papi_presets()[i].long_descr,
-                info.units));
+                _pysym = _pysym.substr(idx + _rm.length());
+            evts.emplace_back(_avail, hardware_counters::api::papi, i, PAPI_PRESET_MASK,
+                              _sym, _pysym, info.short_descr, info.long_descr,
+                              // get_timemory_papi_presets()[i].short_descr,
+                              // get_timemory_papi_presets()[i].long_descr,
+                              info.units);
         }
 
         auto numcmp = PAPI_num_components();
