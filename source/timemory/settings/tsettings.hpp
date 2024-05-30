@@ -266,9 +266,12 @@ tsettings<Tp, Vp>::parse()
 //
 template <typename Tp, typename Vp>
 bool
-tsettings<Tp, Vp>::parse(const std::string& v, update_type _upd)
+tsettings<Tp, Vp>::parse(const std::string& val, update_type _upd)
 {
-    return set(std::move(get_value<decay_t<Tp>>(v)), _upd);
+    auto ret = set(get_value<decay_t<Tp>>(val), _upd);
+    if(ret && m_callback)
+        m_callback(this, val, _upd);
+    return ret;
 }
 //
 template <typename Tp, typename Vp>

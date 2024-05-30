@@ -2326,7 +2326,7 @@ settings::read(std::istream& ifs, std::string inp)
                                             return std::tie(key, val) ==
                                                    std::tie(itr.first, itr.second);
                                         }))
-                            m_unknown_configs.emplace_back(strpair_t{ key, val });
+                            m_unknown_configs.emplace_back(key, val);
                     }
                     else
                     {

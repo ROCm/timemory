@@ -514,6 +514,9 @@ public:
     template <typename Sp = std::string>
     auto find(Sp&& _key, bool _exact = true, const std::string& _category = {});
 
+    template <typename Sp = std::string>
+    decltype(auto) at(Sp&& _key);
+
     template <typename Tp, typename Sp = std::string>
     Tp get(Sp&& _key, bool _exact = true);
 
@@ -1006,6 +1009,16 @@ settings::find(Sp&& _key, bool _exact, const std::string& _category)
 
     // not found
     return m_data.end();
+}
+//
+//--------------------------------------------------------------------------------------//
+//
+template <typename Sp>
+inline decltype(auto)
+settings::at(Sp&& _key)
+{
+    // exact match to map key
+    return m_data.at(std::forward<Sp>(_key));
 }
 //
 //--------------------------------------------------------------------------------------//

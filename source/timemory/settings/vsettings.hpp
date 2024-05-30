@@ -62,6 +62,8 @@ struct vsettings
     using display_map_t    = std::map<std::string, std::string>;
     using shared_pointer_t = std::shared_ptr<vsettings>;
     using update_type      = setting_update_type;
+    using parse_callback_t =
+        std::function<void(vsettings*, std::string_view, update_type)>;
 
     struct noparse
     {};
@@ -79,6 +81,11 @@ struct vsettings
               std::vector<std::string> _cmdline = {}, int32_t _count = -1,
               int32_t _max_count = -1, std::vector<std::string> _choices = {},
               std::set<std::string> _categories = {});
+
+    vsettings(std::string _name, std::string _env_name, std::string _descript,
+              parse_callback_t&& _callback, std::set<std::string> _categories,
+              std::vector<std::string> _cmdline = {}, int32_t _count = -1,
+              int32_t _max_count = -1, std::vector<std::string> _choices = {});
 
     virtual ~vsettings() = default;
 
@@ -125,6 +132,7 @@ struct vsettings
     auto get_type_index() const { return m_type_index; }
     auto get_value_index() const { return m_value_index; }
     auto get_updated() const { return (m_updated != update_type::default_value); }
+    auto get_updated_type() const { return m_updated; }
     auto get_user_updated() const { return (m_updated == update_type::user); }
     auto get_config_updated() const { return (m_updated == update_type::config); }
     auto get_environ_updated() const { return (m_updated == update_type::env); }
@@ -167,6 +175,12 @@ struct vsettings
         return static_cast<const tsettings<decay_t<Tp>, Tp>*>(_val.get());
     }
 
+    template <typename FuncT>
+    void set_parse_callback(FuncT&& _func)
+    {
+        m_callback = std::forward<FuncT>(_func);
+    }
+
 protected:
     friend struct settings;
 
@@ -199,6 +213,7 @@ protected:
     std::vector<std::string> m_cmdline     = {};
     std::vector<std::string> m_choices     = {};
     std::set<std::string>    m_categories  = {};
+    parse_callback_t         m_callback    = {};
 };
 //
 template <typename Tp>

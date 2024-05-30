@@ -68,6 +68,22 @@ vsettings::vsettings(std::string _name, std::string _env_name, std::string _desc
 //
 TIMEMORY_SETTINGS_INLINE
 vsettings::vsettings(std::string _name, std::string _env_name, std::string _descript,
+                     parse_callback_t&& _callback, std::set<std::string> _categories,
+                     std::vector<std::string> _cmdline, int32_t _count,
+                     int32_t _max_count, std::vector<std::string> _choices)
+: m_count{ _count }
+, m_max_count{ _max_count }
+, m_name{ std::move(_name) }
+, m_env_name{ std::move(_env_name) }
+, m_description{ std::move(_descript) }
+, m_cmdline{ std::move(_cmdline) }
+, m_choices{ std::move(_choices) }
+, m_categories{ std::move(_categories) }
+, m_callback{ std::move(_callback) }
+{}
+//
+TIMEMORY_SETTINGS_INLINE
+vsettings::vsettings(std::string _name, std::string _env_name, std::string _descript,
                      std::set<std::string> _categories, std::vector<std::string> _cmdline,
                      int32_t _count, int32_t _max_count,
                      std::vector<std::string> _choices, update_type _upd, bool _enabled,

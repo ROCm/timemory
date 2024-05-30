@@ -173,7 +173,7 @@
                                      INIT, std::string{ #FUNC }, std::string{ ENV_VAR }, \
                                      std::string{ DESC }, CATEGORIES))                   \
                .second)                                                                  \
-            m_order.push_back(ENV_VAR);
+            m_order.emplace_back(ENV_VAR);
 #endif
 //
 //--------------------------------------------------------------------------------------//
@@ -186,7 +186,7 @@
                                      INIT, std::string{}, std::string{ ENV_VAR },        \
                                      std::string{ DESC }, CATEGORIES))                   \
                .second)                                                                  \
-            m_order.push_back(ENV_VAR);
+            m_order.emplace_back(ENV_VAR);
 #endif
 //
 //--------------------------------------------------------------------------------------//
@@ -199,7 +199,7 @@
                                      INIT, std::string{ #FUNC }, std::string{ ENV_VAR }, \
                                      std::string{ DESC }, __VA_ARGS__))                  \
                .second)                                                                  \
-            m_order.push_back(ENV_VAR);
+            m_order.emplace_back(ENV_VAR);
 #endif
 //
 //--------------------------------------------------------------------------------------//
@@ -212,7 +212,7 @@
                                      INIT, std::string{}, std::string{ ENV_VAR },        \
                                      std::string{ DESC }, __VA_ARGS__))                  \
                .second)                                                                  \
-            m_order.push_back(ENV_VAR);
+            m_order.emplace_back(ENV_VAR);
 #endif
 //
 //--------------------------------------------------------------------------------------//
@@ -226,7 +226,7 @@
                                      INIT, std::string{ #FUNC }, std::string{ ENV_VAR }, \
                                      std::string{ DESC }, CATEGORIES))                   \
                .second)                                                                  \
-            m_order.push_back(ENV_VAR);
+            m_order.emplace_back(ENV_VAR);
 #endif
 //
 //--------------------------------------------------------------------------------------//
@@ -238,7 +238,7 @@
                                      INIT, std::string{ #FUNC }, std::string{ ENV_VAR }, \
                                      std::string{ DESC }, __VA_ARGS__))                  \
                .second)                                                                  \
-            m_order.push_back(ENV_VAR);
+            m_order.emplace_back(ENV_VAR);
 #endif
 //
 //--------------------------------------------------------------------------------------//
