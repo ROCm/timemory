@@ -49,6 +49,10 @@
 #    include <hip/hip_runtime_api.h>
 #endif
 
+#if defined(TIMEMORY_HIPCC)
+#    include <hip/amd_detail/amd_device_functions.h>
+#endif
+
 //======================================================================================//
 //
 namespace tim
