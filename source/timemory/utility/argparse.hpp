@@ -573,14 +573,14 @@ struct argument_parser
         }
 
         template <typename Tp>
-        argument& requires(std::initializer_list<Tp>&& _v)
+        argument& required(std::initializer_list<Tp>&& _v)
         {
             container_append(m_requires, std::vector<Tp>{ _v });
             return *this;
         }
 
         template <typename Tp>
-        argument& requires(Tp&& _v)
+        argument& required(Tp&& _v)
         {
             static_assert(helpers::is_initializing_container<Tp>::value,
                           "Error! Expected a container or initializer_list");
