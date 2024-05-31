@@ -565,15 +565,15 @@ def run_pyctest():
         "TIMEMORY_BUILD_LIBUNWIND": "ON" if args.unwind else "OFF",
         "TIMEMORY_BUILD_DEVELOPER": "ON" if args.developer else "OFF",
         "TIMEMORY_BUILD_TESTING": "ON" if not args.quick else "OFF",
-        "TIMEMORY_BUILD_EXAMPLES": "OFF"
-        if args.quick or args.minimal
-        else "ON",
-        "TIMEMORY_BUILD_EXTRA_OPTIMIZATIONS": "ON"
-        if args.extra_optimizations
-        else "OFF",
-        "TIMEMORY_USE_CTP": "ON"
-        if args.compile_time_perf is not None
-        else "OFF",
+        "TIMEMORY_BUILD_EXAMPLES": (
+            "OFF" if args.quick or args.minimal else "ON"
+        ),
+        "TIMEMORY_BUILD_EXTRA_OPTIMIZATIONS": (
+            "ON" if args.extra_optimizations else "OFF"
+        ),
+        "TIMEMORY_USE_CTP": (
+            "ON" if args.compile_time_perf is not None else "OFF"
+        ),
         "TIMEMORY_USE_HIP": "ON" if args.hip else "OFF",
         "TIMEMORY_USE_MPI": "ON" if args.mpi else "OFF",
         "TIMEMORY_USE_TAU": "ON" if args.tau else "OFF",
