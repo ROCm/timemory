@@ -674,9 +674,9 @@ struct argument_parser
         }
 
     private:
-        argument(const std::string& name, std::string desc, bool required = false)
+        argument(const std::string& name, std::string desc, bool req = false)
         : m_desc(std::move(desc))
-        , m_required(required)
+        , m_required(req)
         {
             m_names.emplace_back(name);
         }
