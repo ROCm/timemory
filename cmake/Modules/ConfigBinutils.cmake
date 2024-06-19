@@ -33,20 +33,28 @@ endif()
 
 timemory_message(STATUS "Attempting to build binutils as external project")
 
+file(GLOB_RECURSE _TIMEMORY_BINUTILS_BUILD_BYPRODUCTS_GLOB
+     ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/*.o
+     ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/*.a)
+
 set(_TIMEMORY_BINUTILS_BUILD_BYPRODUCTS
-    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external
-    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/include
-    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/bfd
-    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/opcodes
-    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/libsframe
-    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/libiberty
+    ${_TIMEMORY_BINUTILS_BUILD_BYPRODUCTS_GLOB}
     ${PROJECT_BINARY_DIR}/external/tpls/lib/libbfd.a
     ${PROJECT_BINARY_DIR}/external/tpls/lib/libopcodes.a
     ${PROJECT_BINARY_DIR}/external/tpls/lib/libiberty.a
     ${PROJECT_BINARY_DIR}/external/tpls/lib/libsframe.a)
 
-foreach(_NAME bfd opcodes iberty)
-    list(APPEND _TIMEMORY_BINUTILS_BUILD_BYPRODUCTS ${_FILE})
+foreach(
+    _FILE
+    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/opcodes/libopcodes.a
+    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/opcodes/.libs/libopcodes.a
+    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/libsframe/.libs/libsframe.a
+    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/bfd/.libs/libbfd.a
+    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/bfd/libbfd.a
+    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/libiberty/libiberty.a)
+    if(NOT "${_FILE}" IN_LIST _TIMEMORY_BINUTILS_BUILD_BYPRODUCTS)
+        list(APPEND _TIMEMORY_BINUTILS_BUILD_BYPRODUCTS _FILE)
+    endif()
 endforeach()
 
 find_program(
