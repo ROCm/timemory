@@ -458,11 +458,31 @@ struct argument_parser
             return *this;
         }
 
-        argument& required(bool req, std::string _msg = "")
+        template <typename Tp>
+        argument& required(std::initializer_list<Tp>&& _v)
         {
-            m_required = req;
-            m_required_info =
-                (_msg.empty()) ? "" : std::string{ " :: " } + std::move(_msg);
+            container_append(m_requires, std::vector<Tp>{ _v });
+            return *this;
+        }
+
+        template <typename Tp>
+        argument& required(Tp&& _v, std::string_view _msg = {})
+        {
+            using core_type = concepts::unqualified_type_t<Tp>;
+            if constexpr(std::is_same<core_type, bool>::value)
+            {
+                m_required = _v;
+            }
+            else
+            {
+                static_assert(helpers::is_initializing_container<core_type>::value,
+                              "Error! Expected a container or initializer_list");
+                container_append(m_requires, std::forward<Tp>(_v));
+            }
+
+            if(!_msg.empty())
+                m_required_info += std::string{ " :: " } + std::string{ _msg };
+
             return *this;
         }
 
@@ -569,22 +589,6 @@ struct argument_parser
             static_assert(helpers::is_initializing_container<Tp>::value,
                           "Error! Expected a container or initializer_list");
             container_append(m_conflicts, std::forward<Tp>(_v));
-            return *this;
-        }
-
-        template <typename Tp>
-        argument& required(std::initializer_list<Tp>&& _v)
-        {
-            container_append(m_requires, std::vector<Tp>{ _v });
-            return *this;
-        }
-
-        template <typename Tp>
-        argument& required(Tp&& _v)
-        {
-            static_assert(helpers::is_initializing_container<Tp>::value,
-                          "Error! Expected a container or initializer_list");
-            container_append(m_requires, std::forward<Tp>(_v));
             return *this;
         }
 
