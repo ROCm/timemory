@@ -74,7 +74,7 @@ include(ExternalProject)
 externalproject_add(
     binutils-external
     PREFIX ${PROJECT_BINARY_DIR}/external/binutils
-    URL http://ftp.gnu.org/gnu/binutils/binutils-2.40.tar.gz
+    URL http://ftpmirror.gnu.org/gnu/binutils/binutils-2.40.tar.gz
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND
         ${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER} CFLAGS=-fPIC\ -O3
