@@ -53,7 +53,7 @@ foreach(
     ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/bfd/libbfd.a
     ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/libiberty/libiberty.a)
     if(NOT "${_FILE}" IN_LIST _TIMEMORY_BINUTILS_BUILD_BYPRODUCTS)
-        list(APPEND _TIMEMORY_BINUTILS_BUILD_BYPRODUCTS _FILE)
+        list(APPEND _TIMEMORY_BINUTILS_BUILD_BYPRODUCTS ${_FILE})
     endif()
 endforeach()
 
