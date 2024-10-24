@@ -68,6 +68,9 @@ struct addr2line_info
     /// default behavior returns the first non-inlined lineinfo instance
     lineinfo get(callback_t _cb = nullptr) const;
 
+    /// default behavior returns the last non-inlined lineinfo instance
+    lineinfo rget(callback_t _cb = nullptr) const;
+
     bool                      found         = false;
     unsigned int              discriminator = 0;
     unsigned long             address       = 0;

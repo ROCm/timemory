@@ -172,6 +172,22 @@ addr2line_info::get(callback_t _cb) const
     return lineinfo{};
 }
 
+addr2line_info::lineinfo
+addr2line_info::rget(callback_t _cb) const
+{
+    if(_cb == nullptr)
+        _cb = [](const lineinfo& _v) { return (_v && _v.inlined == false); };
+
+    auto _sz = lines.size();
+    for(size_t i = 0; i < _sz; ++i)
+    {
+        const auto& itr = lines.at(_sz - i - 1);
+        if((*_cb)(itr))
+            return itr;
+    }
+    return lineinfo{};
+}
+
 addr2line_info
 addr2line(std::shared_ptr<bfd_file> _file, unsigned long address)
 {
