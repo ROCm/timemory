@@ -26,6 +26,7 @@
 
 #include "timemory/components/ompt/backends.hpp"
 #include "timemory/macros/language.hpp"  // string_view
+#include "timemory/process/threading.hpp"
 #include "timemory/variadic/component_tuple.hpp"
 #include "timemory/variadic/macros.hpp"
 
@@ -38,6 +39,44 @@ namespace tim
 {
 namespace openmp
 {
+struct labeled_argument
+{
+    template <typename Tp>
+    labeled_argument(std::string_view _lbl, Tp&& _val)
+    : label{ _lbl }
+    , value{ timemory::join::join("", std::forward<Tp>(_val)) }
+    {}
+
+    friend std::ostream& operator<<(std::ostream& _os, const labeled_argument& _val)
+    {
+        return ((_val.label.length() + _val.value.length()) > 0)
+                   ? (_os << _val.label << "=" << _val.value)
+                   : _os;
+    }
+
+    std::string_view label = {};
+    std::string      value = {};
+};
+
+using argument_array_t = std::vector<labeled_argument>;
+
+struct target_args
+{
+    ompt_id_t target_id  = 0;
+    ompt_id_t host_op_id = 0;
+};
+
+struct context_info
+{
+    std::string_view           label            = {};
+    const void*                codeptr_ra       = nullptr;
+    argument_array_t           arguments        = {};
+    std::optional<target_args> target_arguments = std::nullopt;
+    std::string                func             = {};
+    std::string                file             = {};
+    uint32_t                   line             = 0;
+};
+
 template <typename Tp>
 std::atomic<uint64_t>&
 get_counter()
@@ -48,21 +87,21 @@ get_counter()
 
 template <typename BundleT, typename... Args>
 inline void
-context_store(string_view_cref_t _key, Args... _args)
+context_store(string_view_cref_t _key, const context_info& _ctx_info, Args... _args)
 {
     using bundle_type = BundleT;
 
     bundle_type _v{ _key };
-    _v.construct(_args...);
+    _v.construct(_ctx_info, _args...);
     _v.start();
-    _v.store(_args...);
+    _v.store(_ctx_info, _args...);
     _v.stop();
 }
 
 template <typename Tp, typename... Args>
 inline void
 context_construct(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt_data,
-                  Args... _args)
+                  const context_info& _ctx_info, Args... _args)
 {
     using bundle_type = std::remove_pointer_t<std::decay_t<typename Tp::mapped_type>>;
 
@@ -81,13 +120,13 @@ context_construct(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt_data,
 
     _data.at(_idx) = new bundle_type{ _key };
     auto _v        = _data.at(_idx);
-    _v->construct(_args...);
+    _v->construct(_ctx_info, _args...);
 }
 
 template <typename Tp, typename... Args>
 inline void
 context_start_constructed(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt_data,
-                          Args... _args)
+                          const context_info& _ctx_info, Args... _args)
 {
     if(!_ompt_data)
         throw std::runtime_error(
@@ -103,21 +142,22 @@ context_start_constructed(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt
                                                _idx, "! key = ", _key));
 
     auto _v = _data.at(_idx);
-    _v->start(_args...);
+    _v->start(_ctx_info, _args...);
 }
 
 template <typename Tp, typename... Args>
 inline void
-context_start(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt_data, Args... _args)
+context_start(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt_data,
+              const context_info& _ctx_info, Args... _args)
 {
-    context_construct(_key, _data, _ompt_data, _args...);
-    context_start_constructed(_key, _data, _ompt_data, _args...);
+    context_construct(_key, _data, _ompt_data, _ctx_info, _args...);
+    context_start_constructed(_key, _data, _ompt_data, _ctx_info, _args...);
 }
 
 template <typename Tp, typename... Args>
 inline bool
 context_relaxed_stop(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt_data,
-                     Args... _args)
+                     const context_info& _ctx_info, Args... _args)
 {
     if(!_ompt_data)
         throw std::runtime_error(
@@ -130,15 +170,16 @@ context_relaxed_stop(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt_data
     auto _idx = _ompt_data->value;
 
     if(_data.count(_idx) == 0)
-        throw std::runtime_error(TIMEMORY_JOIN("", "Error! data does not contain index ",
-                                               _idx, "! key = ", _key));
+        throw std::runtime_error(TIMEMORY_JOIN(
+            "", "Error! data does not contain index ", _idx, " on thread ",
+            threading::get_id(), "! key = ", _key, ", data size = ", _data.size()));
 
     auto _v = _data.at(_idx);
 
     if(!_v)
         return false;
 
-    _v->stop(_args...);
+    _v->stop(_ctx_info, _args...);
     delete _v;
     _data.at(_idx) = nullptr;
     return true;
@@ -146,9 +187,10 @@ context_relaxed_stop(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt_data
 
 template <typename Tp, typename... Args>
 inline void
-context_stop(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt_data, Args... _args)
+context_stop(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt_data,
+             const context_info& _ctx_info, Args... _args)
 {
-    if(!context_relaxed_stop(_key, _data, _ompt_data, _args...))
+    if(!context_relaxed_stop(_key, _data, _ompt_data, _ctx_info, _args...))
         throw std::runtime_error(
             TIMEMORY_JOIN("", "Error! attempt to stop a missing bundle! key: ", _key));
 }
@@ -156,15 +198,44 @@ context_stop(string_view_cref_t _key, Tp& _data, ompt_data_t* _ompt_data, Args..
 template <typename Tp, typename... Args>
 inline void
 context_endpoint(string_view_cref_t _key, Tp& _data, ompt_scope_endpoint_t endpoint,
-                 ompt_data_t* _ompt_data, Args... _args)
+                 ompt_data_t* _ompt_data, const context_info& _ctx_info, Args... _args)
 {
     if(endpoint == ompt_scope_begin)
     {
-        context_start(_key, _data, _ompt_data, _args...);
+        context_start(_key, _data, _ompt_data, _ctx_info, _args...);
     }
     else if(endpoint == ompt_scope_end)
     {
-        context_stop(_key, _data, _ompt_data, _args...);
+        context_stop(_key, _data, _ompt_data, _ctx_info, _args...);
+    }
+    else
+    {
+        throw std::runtime_error("Error! Unknown endpoint value :: " +
+                                 std::to_string(static_cast<int>(endpoint)));
+    }
+}
+
+template <typename Tp, typename... Args>
+inline void
+context_endpoint_nd(string_view_cref_t _key, ompt_data_t*& _ompt_data,
+                    ompt_scope_endpoint_t endpoint, const context_info& _ctx_info,
+                    Args... _args)
+{
+    using bundle_type = std::remove_pointer_t<std::decay_t<Tp>>;
+
+    if(endpoint == ompt_scope_begin)
+    {
+        auto* _data = new bundle_type{ _key };
+        _data->construct(_ctx_info, _args...);
+        _data->start(_ctx_info, _args...);
+        _ompt_data->ptr = _data;
+    }
+    else if(endpoint == ompt_scope_end)
+    {
+        auto* _data = static_cast<bundle_type*>(_ompt_data->ptr);
+        _data->stop(_ctx_info, _args...);
+        delete _data;
+        _ompt_data->ptr = nullptr;
     }
     else
     {

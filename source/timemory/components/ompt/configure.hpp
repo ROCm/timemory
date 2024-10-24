@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "timemory/components/ompt/backends.hpp"
 #include "timemory/components/ompt/callback_connector.hpp"
 #include "timemory/components/ompt/context_handler.hpp"
 #include "timemory/components/ompt/macros.hpp"
@@ -57,53 +58,42 @@ configure(ompt_function_lookup_t lookup, int _v, ompt_data_t* _data)
     //----------------------------------------------------------------------------------//
     //
 #    define TIMEMORY_OMPT_LOOKUP(TYPE, NAME)                                             \
-        if(settings::verbose() >= 2 || settings::debug())                                \
-            TIMEMORY_PRINTF(stderr, "[ompt] finding %s...\n", #NAME);                    \
-        static TYPE OMPT_##NAME = (TYPE) lookup(#NAME);                                  \
-        consume_parameters(OMPT_##NAME)
+        {                                                                                \
+            if(settings::verbose() >= 2 || settings::debug())                            \
+                TIMEMORY_PRINTF_INFO(stderr, "[ompt] finding %s...\n", #NAME);           \
+            openmp::get_ompt_functions<ApiT>().NAME =                                    \
+                reinterpret_cast<TYPE>(lookup("ompt_" #NAME));                           \
+            if(openmp::get_ompt_functions<ApiT>().NAME == nullptr &&                     \
+               (settings::verbose() >= 0 || settings::debug()))                          \
+            {                                                                            \
+                TIMEMORY_PRINTF_WARNING(stderr, "[ompt] '%s' function lookup failed\n",  \
+                                        "ompt_" #NAME);                                  \
+            }                                                                            \
+        }
     //
     //----------------------------------------------------------------------------------//
     //
-    static auto ompt_set_callback = (ompt_set_callback_t) lookup("ompt_set_callback");
+    openmp::get_function_lookup_callback<ApiT>()(lookup, std::nullopt);
     //
-    TIMEMORY_OMPT_LOOKUP(ompt_get_proc_id_t, ompt_get_proc_id);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_num_places_t, ompt_get_num_places);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_num_devices_t, ompt_get_num_devices);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_unique_id_t, ompt_get_unique_id);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_place_num_t, ompt_get_place_num);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_place_proc_ids_t, ompt_get_place_proc_ids);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_target_info_t, ompt_get_target_info);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_thread_data_t, ompt_get_thread_data);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_record_type_t, ompt_get_record_type);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_record_ompt_t, ompt_get_record_ompt);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_parallel_info_t, ompt_get_parallel_info);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_device_num_procs_t, ompt_get_device_num_procs);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_partition_place_nums_t, ompt_get_partition_place_nums);
-    //
-    // TIMEMORY_OMPT_LOOKUP(ompt_get_device_time_t, ompt_get_device_time);
-    // TIMEMORY_OMPT_LOOKUP(ompt_translate_time_t, ompt_translate_time);
-    //
-    TIMEMORY_OMPT_LOOKUP(ompt_get_task_info_t, ompt_get_task_info);
-    TIMEMORY_OMPT_LOOKUP(ompt_get_task_memory_t, ompt_get_task_memory);
-    //
-    // TIMEMORY_OMPT_LOOKUP(ompt_set_trace_ompt_t, ompt_set_trace_ompt);
-    // TIMEMORY_OMPT_LOOKUP(ompt_start_trace_t, ompt_start_trace);
-    // TIMEMORY_OMPT_LOOKUP(ompt_pause_trace_t, ompt_pause_trace);
-    //
-    TIMEMORY_OMPT_LOOKUP(ompt_enumerate_states_t, ompt_enumerate_states);
-    TIMEMORY_OMPT_LOOKUP(ompt_enumerate_mutex_impls_t, ompt_enumerate_mutex_impls);
-    //
-    TIMEMORY_OMPT_LOOKUP(ompt_callback_mutex_t, ompt_callback_mutex);
-    TIMEMORY_OMPT_LOOKUP(ompt_callback_nest_lock_t, ompt_callback_nest_lock);
-    TIMEMORY_OMPT_LOOKUP(ompt_callback_flush_t, ompt_callback_flush);
-    TIMEMORY_OMPT_LOOKUP(ompt_callback_cancel_t, ompt_callback_cancel);
-    TIMEMORY_OMPT_LOOKUP(ompt_callback_dispatch_t, ompt_callback_dispatch);
-    TIMEMORY_OMPT_LOOKUP(ompt_callback_buffer_request_t, ompt_callback_buffer_request);
-    TIMEMORY_OMPT_LOOKUP(ompt_callback_buffer_complete_t, ompt_callback_buffer_complete);
-    TIMEMORY_OMPT_LOOKUP(ompt_callback_dependences_t, ompt_callback_dependences);
-    TIMEMORY_OMPT_LOOKUP(ompt_callback_task_dependence_t, ompt_callback_task_dependence);
-    //
-    TIMEMORY_OMPT_LOOKUP(ompt_finalize_tool_t, ompt_finalize_tool);
+    TIMEMORY_OMPT_LOOKUP(ompt_set_callback_t, set_callback);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_callback_t, get_callback);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_proc_id_t, get_proc_id);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_num_places_t, get_num_places);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_num_devices_t, get_num_devices);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_unique_id_t, get_unique_id);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_place_num_t, get_place_num);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_place_proc_ids_t, get_place_proc_ids);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_target_info_t, get_target_info);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_thread_data_t, get_thread_data);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_parallel_info_t, get_parallel_info);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_partition_place_nums_t, get_partition_place_nums);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_task_info_t, get_task_info);
+    TIMEMORY_OMPT_LOOKUP(ompt_get_task_memory_t, get_task_memory);
+    TIMEMORY_OMPT_LOOKUP(ompt_enumerate_states_t, enumerate_states);
+    TIMEMORY_OMPT_LOOKUP(ompt_enumerate_mutex_impls_t, enumerate_mutex_impls);
+    TIMEMORY_OMPT_LOOKUP(ompt_finalize_tool_t, finalize_tool);
+
+#    undef TIMEMORY_OMPT_LOOKUP
     //
     //------------------------------------------------------------------------------//
     //
@@ -119,48 +109,38 @@ configure(ompt_function_lookup_t lookup, int _v, ompt_data_t* _data)
     }
 
     auto register_callback = [](ompt_callbacks_t cbidx, ompt_callback_t cb) {
-        int ret = ompt_set_callback(cbidx, cb);
-        if(settings::verbose() < 2 && !settings::debug())
-            return ret;
-        const auto* name = openmp::ompt_callback_labels[cbidx];
+        auto        _cb  = reinterpret_cast<ompt_callback_t>(cb);
+        int         ret  = openmp::get_ompt_functions<ApiT>().set_callback(cbidx, _cb);
+        const auto* name = openmp::get_enum_label(cbidx);
+        const auto* retn = openmp::get_enum_label(static_cast<ompt_set_result_t>(ret));
         switch(ret)
         {
             case ompt_set_error:
-                TIMEMORY_PRINTF_WARNING(stderr,
-                                        "WARNING: OMPT Callback for event '%s' count not "
-                                        "be registered: '%s'\n",
-                                        name, "ompt_set_error");
-                break;
             case ompt_set_never:
-                TIMEMORY_PRINTF_WARNING(stderr,
-                                        "WARNING: OMPT Callback for event '%s' could not "
-                                        "be registered: '%s'\n",
-                                        name, "ompt_set_never");
-                break;
             case ompt_set_impossible:
-                TIMEMORY_PRINTF_WARNING(stderr,
-                                        "WARNING: OMPT Callback for event '%s' could not "
-                                        "be registered: '%s'\n",
-                                        name, "ompt_set_impossible");
-                break;
             case ompt_set_sometimes:
-                TIMEMORY_PRINTF(stderr,
-                                "OMPT Callback for event '%s' registered with "
-                                "return value: '%s'\n",
-                                name, "ompt_set_sometimes");
-                break;
             case ompt_set_sometimes_paired:
-                TIMEMORY_PRINTF(stderr,
-                                "OMPT Callback for event '%s' registered with "
-                                "return value: '%s'\n",
-                                name, "ompt_set_sometimes_paired");
+            {
+                if(settings::verbose() >= 1 || settings::debug())
+                {
+                    TIMEMORY_PRINTF_WARNING(stderr,
+                                            "OMPT Callback for event '%s' registered "
+                                            "with return value: '%s'\n",
+                                            name, retn);
+                }
                 break;
+            }
             case ompt_set_always:
-                TIMEMORY_PRINTF(stderr,
-                                "OMPT Callback for event '%s' registered with "
-                                "return value: '%s'\n",
-                                name, "ompt_set_always");
+            {
+                if(settings::verbose() >= 2 || settings::debug())
+                {
+                    TIMEMORY_PRINTF_INFO(stderr,
+                                         "OMPT Callback for event '%s' registered with "
+                                         "return value: '%s'\n",
+                                         name, retn);
+                }
                 break;
+            }
         }
         return ret;
     };
@@ -392,7 +372,7 @@ configure(ompt_function_lookup_t lookup, int _v, ompt_data_t* _data)
     if(settings::verbose() > 1 || settings::debug())
         TIMEMORY_PRINTF(stderr, "\n");
 
-    return OMPT_ompt_finalize_tool;
+    return openmp::get_ompt_functions<ApiT>().finalize_tool;
 #endif
     (void) lookup;
     (void) _v;
