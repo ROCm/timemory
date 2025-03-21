@@ -75,15 +75,14 @@ externalproject_add(
     binutils-external
     PREFIX ${PROJECT_BINARY_DIR}/external/binutils
     URL ${TIMEMORY_BINUTILS_DOWNLOAD_URL}
-        http://ftpmirror.gnu.org/gnu/binutils/binutils-2.40.tar.gz
-        http://mirrors.kernel.org/sourceware/binutils/releases/binutils-2.40.tar.gz
+        http://ftpmirror.gnu.org/gnu/binutils/binutils-2.42.tar.gz
+        http://mirrors.kernel.org/sourceware/binutils/releases/binutils-2.42.tar.gz
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND
         ${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER} CFLAGS=-fPIC\ -O3
         CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=-fPIC\ -O3 <SOURCE_DIR>/configure
         --prefix=${TPL_STAGING_PREFIX} ${_binutils_CONFIG_FLAGS}
-    BUILD_COMMAND ${MAKE_COMMAND} all-libiberty all-bfd all-opcodes all-libelf
-                  all-libsframe
+    BUILD_COMMAND ${MAKE_COMMAND} all-libiberty all-bfd all-opcodes all-libsframe
     INSTALL_COMMAND ""
     BUILD_BYPRODUCTS "${_TIMEMORY_BINUTILS_BUILD_BYPRODUCTS}")
 
@@ -93,7 +92,7 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} ARGS -E make_directory ${TPL_STAGING_PREFIX}/lib
     COMMAND
         install ARGS -C
-        ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/bfd/libbfd.a
+        ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/bfd/.libs/libbfd.a
         ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/opcodes/libopcodes.a
         ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/libiberty/libiberty.a
         ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/libsframe/.libs/libsframe.a
