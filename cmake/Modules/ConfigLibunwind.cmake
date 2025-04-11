@@ -159,6 +159,16 @@ foreach(_LIB ${libunwind_libs})
 
     if("${_LIB}" MATCHES "\\.so($|\\.)")
         execute_process(COMMAND ${CMAKE_STRIP} ${_LIB})
+        find_program(CHRPATH_EXECUTABLE chrpath)
+
+        if(CHRPATH_EXECUTABLE)
+            execute_process(COMMAND ${CHRPATH_EXECUTABLE} -r "$ORIGIN" ${_LIB})
+        else()
+            message(
+                WARNING
+                    "[timemory] chrpath not found. Skipping rpath modification for libunwind."
+                )
+        endif()
     endif()
 
     install(
