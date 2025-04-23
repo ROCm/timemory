@@ -5,6 +5,7 @@
 : ${INSTALL_DIR:="${SOURCE_DIR}/install-timemory-timem"}
 : ${NJOBS:=2}
 : ${GENERATORS:="STGZ"}
+: ${PACKAGE_PREFIX:="/usr/local"}
 
 cmake                                                                                   \
     -B ${BINARY_DIR}                                                                    \
@@ -22,6 +23,13 @@ cmake                                                                           
 pushd ${BINARY_DIR}
 cmake --build . --target all     --parallel ${NJOBS} -- VERBOSE=0
 cmake --build . --target install --parallel ${NJOBS}
-cpack -G "${GENERATORS}" -D CPACK_PACKAGING_INSTALL_PREFIX=/usr/local -D CPACK_PACKAGE_DIRECTORY=${PWD}/packaging
+for GEN in $(echo "${GENERATORS}" | sed 's/;/ /g')
+do
+    if [ "${GEN}" = "STGZ" ]; then
+        cpack -G "${GEN}" -D CPACK_PACKAGE_DIRECTORY=${PWD}/packaging
+    else
+        cpack -G "${GEN}" -D CPACK_PACKAGE_DIRECTORY=${PWD}/packaging -D CPACK_PACKAGING_INSTALL_PREFIX=${PACKAGE_PREFIX}
+    fi
+done
 rm -rf ${PWD}/packaging/_CPack_Packages
 popd
