@@ -35,6 +35,7 @@
 #define TIMEMORY_COMPILER_INSTRUMENTATION
 
 #include "timemory/backends/process.hpp"
+#include "timemory/compat/macros.h"
 #include "timemory/components/network/components.hpp"
 #include "timemory/components/papi/types.hpp"
 #include "timemory/environment.hpp"
@@ -98,7 +99,7 @@ get_internal_libpath(const std::string& _lib)
     auto _dir = std::string{ "./" };
     if(_pos != std::string_view::npos)
         _dir = _exe.substr(0, _pos);
-    return timemory::join::join("/", _dir, "..", "lib", _lib);
+    return timemory::join::join("/", _dir, "..", TIMEMORY_STRINGIZE(TIMEM_LIBDIR), _lib);
 }
 
 enum update_mode : int

@@ -164,6 +164,8 @@ add_dependencies(timem timem-library)
 
 target_sources(timem PRIVATE timem.cpp)
 
+target_compile_definitions(timem PRIVATE TIMEM_LIBDIR=${CMAKE_INSTALL_LIBDIR})
+
 if(TIMEMORY_BUILD_TOOLS_PAPI)
     target_compile_definitions(timem PRIVATE TIMEMORY_USE_PAPI=1)
 endif()
