@@ -380,7 +380,7 @@ template <template <typename...> class CompT, size_t N, typename... Types>
 void
 sampler<CompT<Types...>, N>::execute(int signum)
 {
-    if(!trait::runtime_enabled<this_type>::get())
+    if(!trait::runtime_enabled<this_type>::get() || threading::get_is_shutting_down())
         return;
 
     // save errno
@@ -411,7 +411,7 @@ template <template <typename...> class CompT, size_t N, typename... Types>
 void
 sampler<CompT<Types...>, N>::execute(int signum, siginfo_t* _info, void* _data)
 {
-    if(!trait::runtime_enabled<this_type>::get())
+    if(!trait::runtime_enabled<this_type>::get() || threading::get_is_shutting_down())
         return;
 
     // save errno
