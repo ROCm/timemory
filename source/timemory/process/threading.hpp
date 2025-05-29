@@ -268,7 +268,7 @@ inline thread_local bool is_shutting_down = false;
 
 inline void set_is_shutting_down(bool shutting_down = true)
 {
-    is_shutting_down = is_shutting_down;
+    is_shutting_down = shutting_down;
 }
 
 inline bool get_is_shutting_down()
