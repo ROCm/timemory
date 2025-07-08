@@ -9,7 +9,7 @@
 	url = https://github.com/jrmadsen/Caliper.git
 [submodule "external/gotcha"]
 	path = external/gotcha
-	url = https://github.com/jrmadsen/GOTCHA.git
+	url = https://github.com/ROCm/GOTCHA.git
 [submodule "external/llvm-ompt"]
 	path = external/llvm-ompt
 	url = https://github.com/NERSC/LLVM-openmp.git
