@@ -45,10 +45,9 @@ struct freq
     auto     operator()(size_t _idx) const;
     explicit operator bool() const;
 
-    static auto                 get(size_t _idx);
-    static size_t               size() { return get_offsets().size(); }
-    static std::vector<size_t>& get_offsets();
-    static auto&                get_ifstream()
+    static double   get(size_t _idx);
+    static size_t   size() { return std::thread::hardware_concurrency(); }
+    static auto&    get_ifstream()
     {
         static thread_local auto _v = []() {
             auto _ifs =
@@ -63,15 +62,39 @@ struct freq
 
 inline freq::operator bool() const { return (get_ifstream() != nullptr); }
 
-inline auto
+inline double
 freq::get(size_t _idx)
 {
-    auto&  _ifs     = get_ifstream();
-    auto&  _offsets = get_offsets();
-    double _freq    = 0.0;
-    _ifs->seekg(_offsets.at(_idx), _ifs->beg);
-    (*_ifs) >> _freq;
-    return _freq;
+    std::ifstream ifs("/proc/cpuinfo");
+    if(!ifs) return 0.0;
+
+    std::string line;
+    size_t current_cpu = 0;
+
+    while(std::getline(ifs, line))
+    {
+        if(line.find("processor") == 0)
+        {
+            size_t idx;
+            if(sscanf(line.c_str(), "processor : %zu", &idx) == 1)
+            {
+                current_cpu = idx;
+            }
+        }
+        if(current_cpu == _idx && line.find("cpu MHz") == 0)
+        {
+            double freq = 0.0;
+            size_t pos = line.find(':');
+            if(pos != std::string::npos)
+            {
+                std::string value = line.substr(pos + 1);
+                freq = std::stod(value);
+                return freq;
+            }
+        }
+    }
+
+    return 0.0;
 }
 
 inline auto
@@ -80,55 +103,6 @@ freq::operator()(size_t _idx) const
     return freq::get(_idx % size());
 }
 
-inline std::vector<size_t>&
-freq::get_offsets()
-{
-    static auto _v = []() {
-        auto                _ncpu = std::thread::hardware_concurrency();
-        std::vector<size_t> _cpu_mhz_pos{};
-        std::ifstream       _ifs{ "/proc/cpuinfo" };
-        if(_ifs)
-        {
-            for(size_t i = 0; i < _ncpu; ++i)
-            {
-                short       _n = 0;
-                std::string _st{};
-                while(_ifs && _ifs.good())
-                {
-                    std::string _s{};
-                    _ifs >> _s;
-                    if(!_ifs.good() || !_ifs)
-                        break;
-
-                    if(_s == "cpu" || _s == "MHz" || _s == ":")
-                    {
-                        ++_n;
-                        _st += _s + " ";
-                    }
-                    else
-                    {
-                        _n  = 0;
-                        _st = {};
-                    }
-
-                    if(_n == 3)
-                    {
-                        size_t _pos = _ifs.tellg();
-                        _cpu_mhz_pos.emplace_back(_pos + 1);
-                        _ifs >> _s;
-                        if(!_ifs.good() || !_ifs)
-                            break;
-                        break;
-                    }
-                }
-            }
-        }
-
-        _ifs.close();
-        return _cpu_mhz_pos;
-    }();
-    return _v;
-}
 }  // namespace cpuinfo
 }  // namespace procfs
 }  // namespace tim
