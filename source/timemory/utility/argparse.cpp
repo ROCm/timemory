@@ -289,7 +289,7 @@ argument_parser::enable_help()
 TIMEMORY_UTILITY_INLINE
 // clang-format on
 argument_parser::argument&
-argument_parser::enable_help(const std::string& _extra, const std::string& _epilogue,
+argument_parser::enable_help(const std::string _extra, const std::string _epilogue,
                              int _exit_code)
 {
     m_help_enabled = true;
@@ -414,7 +414,7 @@ argument_parser::enable_version(
 TIMEMORY_UTILITY_INLINE
 // clang-format on
 void
-argument_parser::print_help(const std::string& _extra, const std::string& _epilogue)
+argument_parser::print_help(const std::string _extra, const std::string _epilogue)
 {
     end_group();
 
