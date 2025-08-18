@@ -874,7 +874,7 @@ struct argument_parser
     //
     //----------------------------------------------------------------------------------//
     //
-    void print_help(const std::string& _extra = {}, const std::string& _epilogue = {});
+    void print_help(const std::string _extra = {}, const std::string _epilogue = {});
     //
     //----------------------------------------------------------------------------------//
     //
@@ -981,7 +981,7 @@ struct argument_parser
 
     /// \fn argument& enable_help()
     /// \brief Add a help command
-    argument& enable_help(const std::string& _extra, const std::string& _epilogue = {},
+    argument& enable_help(const std::string _extra, const std::string _epilogue = {},
                           int _exit_code = EXIT_SUCCESS);
 
     /// \fn argument& enable_version(
