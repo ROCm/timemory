@@ -134,8 +134,8 @@ namespace sampling
 //
 template <typename FuncT>
 inline auto
-set_notify(std::function<void(bool*)>& _notify, FuncT&& _v, int)
-    -> decltype(std::forward<FuncT>(_v)(std::declval<bool*>()), void())
+set_notify(std::function<void(bool*)>& _notify, FuncT&& _v,
+           int) -> decltype(std::forward<FuncT>(_v)(std::declval<bool*>()), void())
 {
     _notify = std::forward<FuncT>(_v);
 }
@@ -155,6 +155,7 @@ template <typename FuncT>
 inline auto
 set_notify(std::function<void(bool*)>& _notify, FuncT&& _v)
 {
+    std::cout << "################### set notify ##################### " << "\n";
     set_notify(_notify, std::forward<FuncT>(_v), 0);
 }
 //
@@ -235,7 +236,7 @@ struct sampler<CompT<Types...>, N>
     using signal_set_t = std::set<int>;
     using pid_cb_t     = std::function<bool(pid_t, int, int)>;
     using array_t      = conditional_t<fixed_size_t<N>::value, std::array<bundle_type, N>,
-                                  std::vector<bundle_type>>;
+                                       std::vector<bundle_type>>;
     using data_type    = array_t;
     using buffer_t     = data_storage::ring_buffer<bundle_type>;
     using allocator_t =
@@ -244,6 +245,9 @@ struct sampler<CompT<Types...>, N>
     using array_type    = array_t;
     using tracker_type  = policy::instance_tracker<this_type, true>;
     using trigger_ptr_t = std::unique_ptr<trigger>;
+
+    using sample_callback_t =
+        std::function<void(int64_t tid, const bundle_type&, int signum)>;
 
     friend struct allocator<this_type>;
 
@@ -475,6 +479,42 @@ public:
 
     auto get_sample_count() const { return m_count; }
 
+public:
+    /// \fn void set_sample_callback(FuncT&& _callback)
+    /// \brief Set a callback that gets called immediately after each sample is taken
+    /// This is different from set_notify which only triggers on buffer management events
+    template <typename FuncT>
+    void set_sample_callback(FuncT&& _callback)
+    {
+        m_sample_callback = [callback = std::forward<FuncT>(_callback)](
+                                int64_t tid, const bundle_type& sample, int signum) {
+            if constexpr(std::is_invocable_v<FuncT, int64_t, const bundle_type&, int>)
+            {
+                callback(tid, sample, signum);
+            }
+            else if constexpr(std::is_invocable_v<FuncT, const bundle_type&, int>)
+            {
+                callback(sample, signum);
+            }
+            else if constexpr(std::is_invocable_v<FuncT, const bundle_type&>)
+            {
+                callback(sample);
+            }
+            else
+            {
+                callback();
+            }
+        };
+    }
+
+    /// \fn void clear_sample_callback()
+    /// \brief Remove the sample callback
+    void clear_sample_callback() { m_sample_callback = nullptr; }
+
+    /// \fn bool has_sample_callback() const
+    /// \brief Check if a sample callback is set
+    bool has_sample_callback() const { return static_cast<bool>(m_sample_callback); }
+
 private:
     static void default_notify(bool* _completed)
     {
@@ -504,6 +544,7 @@ protected:
     std::shared_ptr<allocator_t> m_alloc              = {};
     std::vector<trigger_ptr_t>   m_triggers           = {};
     std::string                  m_label              = {};
+    sample_callback_t            m_sample_callback    = nullptr;
 
 private:
     struct instance_data

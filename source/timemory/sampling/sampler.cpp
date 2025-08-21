@@ -192,6 +192,18 @@ template <typename... Args, typename Tp, enable_if_t<Tp::value>>
 void
 sampler<CompT<Types...>, N>::sample(Args&&... _args)
 {
+    // Extract signal number from args if available
+    int signum = 0;
+    if constexpr(sizeof...(Args) > 0)
+    {
+        auto _arg_tuple = std::make_tuple(_args...);
+        if constexpr(std::is_convertible_v<std::tuple_element_t<0, decltype(_arg_tuple)>,
+                                           int>)
+        {
+            signum = static_cast<int>(std::get<0>(_arg_tuple));
+        }
+    }
+
     if(m_count > 0 && m_count % N == (N - 1))
     {
         bool _completed = false;
@@ -223,7 +235,21 @@ sampler<CompT<Types...>, N>::sample(Args&&... _args)
                            std::forward<Args>(_args)...);
         }
     }
-    else { m_last->sample(std::forward<Args>(_args)...); }
+    else
+    {
+        m_last->sample(std::forward<Args>(_args)...);
+    }
+
+    if(m_sample_callback && m_last)
+    {
+        try
+        {
+            m_sample_callback(m_tid, *m_last, signum);
+        } catch(...)
+        {
+            TIMEMORY_PRINTF(stderr, "Failed to execute callback on imediate sampling!\n");
+        }
+    }
 }
 //
 //--------------------------------------------------------------------------------------//
@@ -233,6 +259,18 @@ template <typename... Args, typename Tp, enable_if_t<!Tp::value>>
 void
 sampler<CompT<Types...>, N>::sample(Args&&... _args)
 {
+    // Extract signal number from args if available
+    int signum = 0;
+    if constexpr(sizeof...(Args) > 0)
+    {
+        auto _arg_tuple = std::make_tuple(_args...);
+        if constexpr(std::is_convertible_v<std::tuple_element_t<0, decltype(_arg_tuple)>,
+                                           int>)
+        {
+            signum = static_cast<int>(std::get<0>(_arg_tuple));
+        }
+    }
+
     assert(m_buffer_size > 0);
     if(!m_buffer.is_initialized())
     {
@@ -269,7 +307,21 @@ sampler<CompT<Types...>, N>::sample(Args&&... _args)
                            std::forward<Args>(_args)...);
         }
     }
-    else { m_last->sample(std::forward<Args>(_args)...); }
+    else
+    {
+        m_last->sample(std::forward<Args>(_args)...);
+    }
+
+    if(m_sample_callback && m_last)
+    {
+        try
+        {
+            m_sample_callback(m_tid, *m_last, signum);
+        } catch(...)
+        {
+            TIMEMORY_PRINTF(stderr, "Failed to execute callback on imediate sampling!\n");
+        }
+    }
 }
 //
 //--------------------------------------------------------------------------------------//
