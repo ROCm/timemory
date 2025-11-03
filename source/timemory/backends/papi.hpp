@@ -1025,6 +1025,9 @@ overflow(int evt_set, string_view_cref_t evt_name, int threshold, int flags,
 hwcounter_info_t
 available_events_info();
 
+hwcounter_info_t
+available_events_info(const std::vector<std::string>& excluded_components);
+
 //--------------------------------------------------------------------------------------//
 
 tim::hardware_counters::info

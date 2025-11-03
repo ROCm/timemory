@@ -403,6 +403,14 @@ TIMEMORY_BACKENDS_INLINE
 hwcounter_info_t
 available_events_info()
 {
+    // Delegate to the overloaded version with no exclusions
+    return available_events_info(std::vector<std::string>{});
+}
+
+TIMEMORY_BACKENDS_INLINE
+hwcounter_info_t
+available_events_info(const std::vector<std::string>& excluded_components)
+{
     hwcounter_info_t evts{};
 
 #if defined(TIMEMORY_USE_PAPI)
@@ -527,6 +535,19 @@ available_events_info()
             if(component->disabled != 0)
                 continue;
 #    endif
+
+            // Skip excluded components
+            bool should_skip = false;
+            for(const auto& excluded : excluded_components)
+            {
+                if(strcmp(component->name, excluded.c_str()) == 0)
+                {
+                    should_skip = true;
+                    break;
+                }
+            }
+            if(should_skip)
+                continue;
 
             // show this component has not found any events yet
             // int num_cmp_events = 0;
