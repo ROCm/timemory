@@ -254,7 +254,7 @@ check(int retval, string_view_cref_t mesg, bool quiet = false)
 #if defined(TIMEMORY_USE_PAPI)
         auto*  error_str = PAPI_strerror(retval);
         auto&& _msg      = TIMEMORY_JOIN(' ', "[timemory][papi]", mesg, ":: PAPI_error",
-                                    retval, ":", error_str);
+                                         retval, ":", error_str);
         if(settings::papi_fail_on_error())
         {
             TIMEMORY_EXCEPTION(_msg);
@@ -1023,10 +1023,7 @@ overflow(int evt_set, string_view_cref_t evt_name, int threshold, int flags,
 //--------------------------------------------------------------------------------------//
 
 hwcounter_info_t
-available_events_info();
-
-hwcounter_info_t
-available_events_info(const std::vector<std::string>& excluded_components);
+available_events_info(const std::unordered_set<std::string>& excluded_components = {});
 
 //--------------------------------------------------------------------------------------//
 
