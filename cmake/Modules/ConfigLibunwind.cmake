@@ -160,13 +160,16 @@ foreach(_LIB ${libunwind_libs})
     if("${_LIB}" MATCHES "\\.so($|\\.)")
         execute_process(COMMAND ${CMAKE_STRIP} ${_LIB})
         find_program(CHRPATH_EXECUTABLE chrpath)
+        find_program(PATCHELF_EXECUTABLE patchelf)
 
         if(CHRPATH_EXECUTABLE)
             execute_process(COMMAND ${CHRPATH_EXECUTABLE} -r "$ORIGIN" ${_LIB})
+        elseif(PATCHELF_EXECUTABLE)
+            execute_process(COMMAND ${PATCHELF_EXECUTABLE} --set-rpath "$ORIGIN" ${_LIB})
         else()
             message(
-                WARNING
-                    "[timemory] chrpath not found. Skipping rpath modification for libunwind."
+                AUTHOR_WARNING
+                    "[timemory] Neither chrpath nor patchelf found. Skipping rpath modification for libunwind."
                 )
         endif()
     endif()
