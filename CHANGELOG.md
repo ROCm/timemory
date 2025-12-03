@@ -15,7 +15,7 @@
 - Added `TIMEMORY_MAX_STORAGE_THREADS` CMake option
   - Defaults to `TIMEMORY_MAX_THREADS` value
   - Controls storage array sizing for per-thread data
-  - Auto-adjusts to TIMEMORY_MAX_THREADS if set lower than `TIMEMORY_MAX_THREADS`
+  - Auto-adjusts to `TIMEMORY_MAX_THREADS` if set lower than `TIMEMORY_MAX_THREADS`
 
 # timemory
 
