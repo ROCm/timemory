@@ -813,7 +813,7 @@ template <typename T>
 struct set_storage
 {
     friend struct get_storage<T>;
-    static constexpr size_t max_threads = 4096;
+    static constexpr size_t max_threads = TIMEMORY_MAX_STORAGE_THREADS;
     using type                          = T;
     using storage_array_t               = std::array<storage<type>*, max_threads>;
 
