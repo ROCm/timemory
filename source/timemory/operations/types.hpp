@@ -166,9 +166,9 @@ namespace internal
 {
 template <typename U>
 auto
-resolve_record_type(int)
-    -> decltype(U::record(), typename mpl::function_traits<
-                                 decltype(std::declval<U>().record())>::result_type())
+resolve_record_type(int) -> decltype(
+    U::record(),
+    typename mpl::function_traits<decltype(std::declval<U>().record())>::result_type())
 {
     return U::record();
 }
