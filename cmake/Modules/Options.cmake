@@ -564,6 +564,26 @@ timemory_add_feature(TIMEMORY_MAX_THREADS
                      "Maximum number of statically allocated thread-local statics")
 timemory_add_cmake_defines(TIMEMORY_MAX_THREADS VALUE DEFAULT)
 
+if(NOT DEFINED TIMEMORY_MAX_STORAGE_THREADS)
+    set(TIMEMORY_MAX_STORAGE_THREADS
+        "${TIMEMORY_MAX_THREADS}"
+        CACHE STRING "Maximum number of storage thread slots")
+endif()
+
+if(TIMEMORY_MAX_STORAGE_THREADS LESS TIMEMORY_MAX_THREADS)
+    timemory_message(
+        WARNING "TIMEMORY_MAX_STORAGE_THREADS (${TIMEMORY_MAX_STORAGE_THREADS}) "
+        "is less than TIMEMORY_MAX_THREADS (${TIMEMORY_MAX_THREADS}). "
+        "Auto-adjusting to ${TIMEMORY_MAX_THREADS}")
+    set(TIMEMORY_MAX_STORAGE_THREADS
+        "${TIMEMORY_MAX_THREADS}"
+        CACHE STRING "Maximum number of storage thread slots" FORCE)
+endif()
+
+timemory_add_feature(TIMEMORY_MAX_STORAGE_THREADS
+                     "Maximum number of storage thread slots")
+timemory_add_cmake_defines(TIMEMORY_MAX_STORAGE_THREADS VALUE DEFAULT)
+
 if(TIMEMORY_BUILD_EXAMPLES
    AND TIMEMORY_USE_COVERAGE
    AND "$ENV{CONTINUOUS_INTEGRATION}" STREQUAL "true")
