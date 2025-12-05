@@ -7,15 +7,8 @@
 ### Bug Fixes
 
 - Fixed hard-coded thread limit in `operation::set_storage`
-  - Changed from `max_threads = 4096` to use `TIMEMORY_MAX_STORAGE_THREADS`
+  - Changed from `max_threads = 4096` to use `TIMEMORY_MAX_THREADS`
   - Prevents segfaults when Linux thread IDs exceed 4096
-
-### Build System
-
-- Added `TIMEMORY_MAX_STORAGE_THREADS` CMake option
-  - Defaults to `TIMEMORY_MAX_THREADS` value
-  - Controls storage array sizing for per-thread data
-  - Auto-adjusts to `TIMEMORY_MAX_THREADS` if set lower than `TIMEMORY_MAX_THREADS`
 
 ## Version 3.2.4
 
