@@ -1,8 +1,8 @@
 # timemory
 
-## Version 3.2.5
+## Version 4.0.1rc0
 
-> Date: Tue Dec 3 2025
+> Date: Tue Dec 3, 2025
 
 ### Bug Fixes
 
@@ -16,8 +16,6 @@
   - Defaults to `TIMEMORY_MAX_THREADS` value
   - Controls storage array sizing for per-thread data
   - Auto-adjusts to `TIMEMORY_MAX_THREADS` if set lower than `TIMEMORY_MAX_THREADS`
-
-# timemory
 
 ## Version 3.2.4
 
