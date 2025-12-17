@@ -185,8 +185,10 @@ install(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/timemory/libunwind/pkgconfig
     OPTIONAL)
 
+# Add include directories with BEFORE to ensure they come first in include search path
+# This ensures GNU libunwind headers are found before LLVM libunwind headers
 target_include_directories(
-    timemory-libunwind SYSTEM
+    timemory-libunwind BEFORE
     INTERFACE $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/external/libunwind/install/include>
               $<INSTALL_INTERFACE:include/timemory/libunwind>)
 target_link_directories(
