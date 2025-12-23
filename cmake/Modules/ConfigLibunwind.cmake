@@ -79,7 +79,7 @@ function(timemory_libunwind_configure)
 endfunction()
 
 function(timemory_libunwind_build)
-    message(STATUS "[timemory] Building libunwind...")
+    message(STATUS "[timemory] Building libunwind.......")
     timemory_libunwind_execute_process(${MAKE_EXE})
 
     # remove installation if new build
