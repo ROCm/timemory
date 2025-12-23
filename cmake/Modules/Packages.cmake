@@ -569,7 +569,7 @@ if(TIMEMORY_BUILD_YAML)
     timemory_checkout_git_submodule(
         RELATIVE_PATH external/yaml-cpp
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        REPO_URL https://github.com/jrmadsen/yaml-cpp.git
+        REPO_URL https://github.com/jbeder/yaml-cpp.git
         REPO_BRANCH master)
 
     add_library(timemory-yaml-cpp STATIC)
@@ -1138,8 +1138,8 @@ elseif(TIMEMORY_USE_LIBUNWIND AND TIMEMORY_BUILD_LIBUNWIND)
         RECURSIVE
         RELATIVE_PATH external/libunwind
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        REPO_URL https://github.com/jrmadsen/libunwind.git
-        REPO_BRANCH master)
+        REPO_URL https://github.com/libunwind/libunwind.git
+        REPO_BRANCH v1.8-stable)
 
     include(ConfigLibunwind)
 else()
