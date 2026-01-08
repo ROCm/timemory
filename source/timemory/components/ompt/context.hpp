@@ -41,9 +41,20 @@ namespace openmp
 {
 struct labeled_argument
 {
+    template <typename Type>
+    std::string get_type_name(const Type& arg)
+    {
+        const char*                            name = typeid(arg).name();
+        int                                    status;
+        std::unique_ptr<char, void (*)(void*)> demangledName(
+            abi::__cxa_demangle(name, nullptr, nullptr, &status), std::free);
+        return status == 0 ? demangledName.get() : name;
+    }
+
     template <typename Tp>
     labeled_argument(std::string_view _lbl, Tp&& _val)
     : label{ _lbl }
+    , type{ get_type_name(_val) }
     , value{ timemory::join::join("", std::forward<Tp>(_val)) }
     {}
 
@@ -55,6 +66,7 @@ struct labeled_argument
     }
 
     std::string_view label = {};
+    std::string      type  = {};
     std::string      value = {};
 };
 

@@ -289,7 +289,7 @@ argument_parser::enable_help()
 TIMEMORY_UTILITY_INLINE
 // clang-format on
 argument_parser::argument&
-argument_parser::enable_help(const std::string& _extra, const std::string& _epilogue,
+argument_parser::enable_help(const std::string _extra, const std::string _epilogue,
                              int _exit_code)
 {
     m_help_enabled = true;
@@ -414,7 +414,7 @@ argument_parser::enable_version(
 TIMEMORY_UTILITY_INLINE
 // clang-format on
 void
-argument_parser::print_help(const std::string& _extra, const std::string& _epilogue)
+argument_parser::print_help(const std::string _extra, const std::string _epilogue)
 {
     end_group();
 
@@ -985,9 +985,7 @@ argument_parser::parse(const std::vector<std::string>& _args, int verbose_level)
     // execute the argument-specific actions
     for(auto& itr : m_arg_map)
     {
-        if(exists(itr.first))
-            itr.second->execute_actions(*this);
-        else if(itr.second->m_default)
+        if(exists(itr.first) || itr.second->m_default)
             itr.second->execute_actions(*this);
     }
 
