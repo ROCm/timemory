@@ -159,6 +159,19 @@ foreach(_LIB ${libunwind_libs})
 
     if("${_LIB}" MATCHES "\\.so($|\\.)")
         execute_process(COMMAND ${CMAKE_STRIP} ${_LIB})
+        find_program(CHRPATH_EXECUTABLE chrpath)
+        find_program(PATCHELF_EXECUTABLE patchelf)
+
+        if(CHRPATH_EXECUTABLE)
+            execute_process(COMMAND ${CHRPATH_EXECUTABLE} -r "$ORIGIN" ${_LIB})
+        elseif(PATCHELF_EXECUTABLE)
+            execute_process(COMMAND ${PATCHELF_EXECUTABLE} --set-rpath "$ORIGIN" ${_LIB})
+        else()
+            message(
+                AUTHOR_WARNING
+                    "[timemory] Neither chrpath nor patchelf found. Skipping rpath modification for libunwind."
+                )
+        endif()
     endif()
 
     install(
@@ -172,8 +185,10 @@ install(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/timemory/libunwind/pkgconfig
     OPTIONAL)
 
+# Add include directories with BEFORE to ensure they come first in include search path
+# This ensures GNU libunwind headers are found before LLVM libunwind headers
 target_include_directories(
-    timemory-libunwind SYSTEM
+    timemory-libunwind BEFORE
     INTERFACE $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/external/libunwind/install/include>
               $<INSTALL_INTERFACE:include/timemory/libunwind>)
 target_link_directories(

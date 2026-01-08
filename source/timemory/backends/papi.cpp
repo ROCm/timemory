@@ -39,6 +39,7 @@
 
 #include <regex>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -277,8 +278,8 @@ get_event_code(string_view_cref_t event_code_str)
     int event_code = -1;
     int retval     = PAPI_event_name_to_code(event_code_str.data(), &event_code);
     working()      = check(retval, TIMEMORY_JOIN(' ', "Warning!! Failure converting",
-                                            event_code_str, "to enum value")
-                                  .c_str());
+                                                 event_code_str, "to enum value")
+                                       .c_str());
     return (retval == PAPI_OK) ? event_code : PAPI_NOT_INITED;
 #else
     consume_parameters(event_code_str);
@@ -401,7 +402,7 @@ add_events(int event_set, string_t* events, int number)
 
 TIMEMORY_BACKENDS_INLINE
 hwcounter_info_t
-available_events_info()
+available_events_info(const std::unordered_set<std::string>& excluded_components)
 {
     hwcounter_info_t evts{};
 
@@ -527,6 +528,10 @@ available_events_info()
             if(component->disabled != 0)
                 continue;
 #    endif
+
+            // Skip excluded components
+            if(excluded_components.count(component->name) > 0)
+                continue;
 
             // show this component has not found any events yet
             // int num_cmp_events = 0;

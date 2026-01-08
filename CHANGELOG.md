@@ -1,5 +1,15 @@
 # timemory
 
+## Version 4.0.1rc0
+
+> Date: Tue Dec 3, 2025
+
+### Bug Fixes
+
+- Fixed hard-coded thread limit in `operation::set_storage`
+  - Changed from `max_threads = 4096` to use `TIMEMORY_MAX_THREADS`
+  - Prevents segfaults when Linux thread IDs exceed 4096
+
 ## Version 3.2.4
 
 > Date: Mon Jul 19 17:22:28 2021 -0500
