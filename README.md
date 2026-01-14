@@ -1,5 +1,9 @@
 # timemory
 
+## Disclaimer
+
+This is a fork of [NERSC/timemory](https://github.com/NERSC/timemory) that is used for maintaining development branches and long term support branches. It is not a released ROCm repository. Please visit the upstream project for general use.
+
 ## Timing + Memory + Hardware Counter Utilities for C / C++ / CUDA / Python
 
 [![Build Status](https://travis-ci.org/NERSC/timemory.svg?branch=master)](https://travis-ci.org/NERSC/timemory)
