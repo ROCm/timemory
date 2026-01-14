@@ -800,40 +800,19 @@ private:
     }
 };
 //
-//--------------------------------------------------------------------------------------//
 //
-template <typename T>
-struct get_storage;
-//
-/// \struct tim::operation::set_storage
-/// \tparam T Component type
+/// \struct tim::operation::dynamic_storage_base
+/// \tparam StorageType The storage pointer type (e.g., storage<T>*)
+/// \tparam max_threads Initial capacity for the storage array
 ///
-/// \brief This operation attempts to call a member function which provides a pointer to
-/// the data storage structure for a component which should be updated for
-/// aggregation/logging.
-template <typename T>
-struct set_storage
+/// \brief A reusable base class for thread-safe dynamic storage management.
+/// Provides ensure_capacity() for automatic resizing with geometric growth.
+template <typename StorageType, size_t max_threads>
+struct dynamic_storage_base
 {
-    friend struct get_storage<T>;
-    static constexpr size_t max_threads = TIMEMORY_MAX_THREADS;
-    using type                          = T;
-    using storage_array_t               = std::vector<storage<type>*>;
+    using storage_array_t = std::vector<StorageType>;
 
-    TIMEMORY_DEFAULT_OBJECT(set_storage)
-
-    TIMEMORY_INLINE auto operator()(storage<type>* _storage, size_t _idx) const
-    {
-        ensure_capacity(_idx);
-        get().at(_idx) = static_cast<storage<type>*>(_storage);
-    }
-
-    TIMEMORY_INLINE auto operator()(type& _obj, size_t _idx) const
-    {
-        ensure_capacity(_idx);
-        get().at(_idx) = static_cast<storage<type>*>(_obj.get_storage());
-    }
-
-private:
+protected:
     static std::atomic<size_t>& get_capacity()
     {
         static std::atomic<size_t> _cap{max_threads};
@@ -846,7 +825,7 @@ private:
         return _mtx;
     }
 
-    static void ensure_capacity(size_t _idx)
+    static void ensure_capacity(storage_array_t& _v, size_t _idx)
     {
         // Fast path: check atomic capacity (no lock)
         if(_idx < get_capacity().load(std::memory_order_acquire))
@@ -854,7 +833,6 @@ private:
 
         // Slow path: need to resize with lock
         std::lock_guard<std::mutex> _lock(get_mutex());
-        auto& _v = get();
 
         // Double-check after acquiring lock
         if(_idx >= _v.size())
@@ -866,6 +844,45 @@ private:
             get_capacity().store(_v.size(), std::memory_order_release);
         }
     }
+};
+//
+//--------------------------------------------------------------------------------------//
+
+//--------------------------------------------------------------------------------------//
+//
+template <typename T>
+struct get_storage;
+//
+/// \struct tim::operation::set_storage
+/// \tparam T Component type
+///
+/// \brief This operation attempts to call a member function which provides a pointer to
+/// the data storage structure for a component which should be updated for
+/// aggregation/logging.
+template <typename T>
+struct set_storage : protected dynamic_storage_base<storage<T>*, TIMEMORY_MAX_THREADS>
+{
+    static constexpr size_t max_threads = TIMEMORY_MAX_THREADS;
+    using type                          = T;
+    using base_type                     = dynamic_storage_base<storage<T>*, max_threads>;
+    using storage_array_t               = typename base_type::storage_array_t;
+
+    TIMEMORY_DEFAULT_OBJECT(set_storage)
+
+    TIMEMORY_INLINE auto operator()(storage<type>* _storage, size_t _idx) const
+    {
+        base_type::ensure_capacity(get(), _idx);
+        get().at(_idx) = static_cast<storage<type>*>(_storage);
+    }
+
+    TIMEMORY_INLINE auto operator()(type& _obj, size_t _idx) const
+    {
+        base_type::ensure_capacity(get(), _idx);
+        get().at(_idx) = static_cast<storage<type>*>(_obj.get_storage());
+    }
+
+    // Expose get_capacity for get_storage access
+    using base_type::get_capacity;
 
     static storage_array_t& get()
     {
