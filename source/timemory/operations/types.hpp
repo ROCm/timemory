@@ -834,26 +834,18 @@ struct set_storage
     }
 
 private:
-    static std::atomic<size_t>& get_capacity()
-    {
-        static std::atomic<size_t> _cap{max_threads};
-        return _cap;
-    }
-
-    static std::mutex& get_mutex()
-    {
-        static std::mutex _mtx;
-        return _mtx;
-    }
+    // Static member variables for thread-safe capacity tracking
+    static inline std::atomic<size_t> m_capacity{max_threads};
+    static inline std::mutex          m_mutex;
 
     static void ensure_capacity(size_t _idx)
     {
         // Fast path: check atomic capacity (no lock)
-        if(_idx < get_capacity().load(std::memory_order_acquire))
+        if(_idx < m_capacity.load(std::memory_order_acquire))
             return;
 
         // Slow path: need to resize with lock
-        std::lock_guard<std::mutex> _lock(get_mutex());
+        std::lock_guard<std::mutex> _lock(m_mutex);
         auto& _v = get();
 
         // Double-check after acquiring lock
@@ -863,7 +855,7 @@ private:
             while(new_size <= _idx)
                 new_size *= 2;  // Geometric growth (doubling)
             _v.resize(new_size, nullptr);
-            get_capacity().store(_v.size(), std::memory_order_release);
+            m_capacity.store(_v.size(), std::memory_order_release);
         }
     }
 
@@ -903,7 +895,7 @@ struct get_storage
     TIMEMORY_INLINE auto operator()(size_t _idx) const
     {
         // Thread-safe read using atomic capacity
-        if(_idx >= operation::set_storage<T>::get_capacity().load(std::memory_order_acquire))
+        if(_idx >= operation::set_storage<T>::m_capacity.load(std::memory_order_acquire))
             return static_cast<storage<type>*>(nullptr);
         return operation::set_storage<T>::get().at(_idx);
     }
