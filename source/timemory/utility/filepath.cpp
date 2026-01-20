@@ -136,7 +136,7 @@ makedir(std::string _dir, int umask)
                 if(!direxists(_base))
                 {
                     auto _err = _make_dir(_base);
-                    if(_err != 0)
+                    if(_err != 0 && _err != EEXIST)  // EEXIST is OK - race condition with other processes
                     {
                         TIMEMORY_PRINTF_WARNING(stderr, "mkdir(\"%s\", %i) failed: %s\n",
                                                 _base.c_str(), umask, strerror(_err));
