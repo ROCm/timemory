@@ -812,36 +812,30 @@ struct dynamic_storage_base
 {
     using storage_array_t = std::vector<StorageType>;
 
-protected:
-    static std::atomic<size_t>& get_capacity()
+    /// @brief Returns the current capacity (thread-safe read-only access)
+    static size_t get_capacity()
     {
-        static std::atomic<size_t> _cap{max_threads};
-        return _cap;
+        return capacity.load(std::memory_order_acquire);
     }
 
-    static std::mutex& get_mutex()
-    {
-        static std::mutex _mtx;
-        return _mtx;
-    }
+protected:
+    static inline std::atomic<size_t> capacity{max_threads};
+    static inline std::mutex          mutex{};
 
     static void ensure_capacity(storage_array_t& _v, size_t _idx)
     {
-        // Fast path: check atomic capacity (no lock)
-        if(_idx < get_capacity().load(std::memory_order_acquire))
+        if(_idx < capacity.load(std::memory_order_acquire))
             return;
 
-        // Slow path: need to resize with lock
-        std::lock_guard<std::mutex> _lock(get_mutex());
+        std::lock_guard<std::mutex> _lock(mutex);
 
-        // Double-check after acquiring lock
         if(_idx >= _v.size())
         {
             size_t new_size = std::max(_v.size(), size_t(1));
             while(new_size <= _idx)
                 new_size *= 2;  // Geometric growth (doubling)
             _v.resize(new_size, nullptr);
-            get_capacity().store(_v.size(), std::memory_order_release);
+            capacity.store(_v.size(), std::memory_order_release);
         }
     }
 };
@@ -860,7 +854,7 @@ struct get_storage;
 /// the data storage structure for a component which should be updated for
 /// aggregation/logging.
 template <typename T>
-struct set_storage : protected dynamic_storage_base<storage<T>*, TIMEMORY_MAX_THREADS>
+struct set_storage : public dynamic_storage_base<storage<T>*, TIMEMORY_MAX_THREADS>
 {
     static constexpr size_t max_threads = TIMEMORY_MAX_THREADS;
     using type                          = T;
@@ -880,9 +874,6 @@ struct set_storage : protected dynamic_storage_base<storage<T>*, TIMEMORY_MAX_TH
         base_type::ensure_capacity(get(), _idx);
         get().at(_idx) = static_cast<storage<type>*>(_obj.get_storage());
     }
-
-    // Expose get_capacity for get_storage access
-    using base_type::get_capacity;
 
     static storage_array_t& get()
     {
@@ -920,7 +911,7 @@ struct get_storage
     TIMEMORY_INLINE auto operator()(size_t _idx) const
     {
         // Thread-safe read using atomic capacity
-        if(_idx >= operation::set_storage<T>::get_capacity().load(std::memory_order_acquire))
+        if(_idx >= operation::set_storage<T>::get_capacity())
             return static_cast<storage<type>*>(nullptr);
         return operation::set_storage<T>::get().at(_idx);
     }
