@@ -801,42 +801,103 @@ private:
 };
 //
 //
+/// \struct tim::operation::stable_storage
+/// \tparam StorageType The storage pointer type (e.g., storage<T>*)
+/// \tparam ChunkSize Size of each chunk (default: max_threads)
+///
+/// \brief A pointer-stable storage container using vector of unique_ptr to arrays.
+/// Unlike std::vector, existing element pointers remain valid during growth.
+template <typename StorageType, size_t ChunkSize>
+class stable_storage
+{
+public:
+    using value_type = StorageType;
+    using chunk_type = std::array<StorageType, ChunkSize>;
+    using chunk_ptr  = std::unique_ptr<chunk_type>;
+    
+    stable_storage() = default;
+    
+    explicit stable_storage(size_t initial_size, StorageType default_val = StorageType{})
+    {
+        reserve(initial_size);
+        for(size_t i = 0; i < initial_size; ++i)
+            (*this)[i] = default_val;
+        m_size = initial_size;
+    }
+    
+    StorageType& operator[](size_t idx)
+    {
+        ensure_capacity(idx);
+        return (*m_chunks[idx / ChunkSize])[idx % ChunkSize];
+    }
+    
+    StorageType& at(size_t idx)
+    {
+        ensure_capacity(idx);
+        return (*m_chunks[idx / ChunkSize])[idx % ChunkSize];
+    }
+    
+    size_t size() const { return m_size; }
+    size_t capacity() const { return m_chunks.size() * ChunkSize; }
+    
+    void reserve(size_t new_cap)
+    {
+        while(capacity() < new_cap)
+            add_chunk();
+    }
+    
+    void ensure_capacity(size_t idx)
+    {
+        if(idx >= capacity())
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            while(idx >= capacity())
+                add_chunk();
+        }
+        if(idx >= m_size)
+            m_size = idx + 1;
+    }
+
+private:
+    void add_chunk()
+    {
+        auto chunk = std::make_unique<chunk_type>();
+        chunk->fill(StorageType{});
+        m_chunks.push_back(std::move(chunk));
+    }
+    
+    std::vector<chunk_ptr> m_chunks{};
+    size_t                 m_size{0};
+    std::mutex             m_mutex{};
+};
+
 /// \struct tim::operation::dynamic_storage_base
 /// \tparam StorageType The storage pointer type (e.g., storage<T>*)
 /// \tparam max_threads Initial capacity for the storage array
 ///
 /// \brief A reusable base class for thread-safe dynamic storage management.
-/// Provides ensure_capacity() for automatic resizing with geometric growth.
+/// Uses stable_storage which maintains pointer stability during growth.
 template <typename StorageType, size_t max_threads>
 struct dynamic_storage_base
 {
-    using storage_array_t = std::vector<StorageType>;
+    using storage_array_t = stable_storage<StorageType, max_threads>;
 
     /// @brief Returns the current capacity (thread-safe read-only access)
     static size_t get_capacity()
     {
-        return capacity.load(std::memory_order_acquire);
+        return get_storage().capacity();
     }
 
 protected:
-    static inline std::atomic<size_t> capacity{max_threads};
-    static inline std::mutex          mutex{};
+    static storage_array_t& get_storage()
+    {
+        static storage_array_t instance(max_threads, nullptr);
+        return instance;
+    }
 
     static void ensure_capacity(storage_array_t& _v, size_t _idx)
     {
-        if(_idx < capacity.load(std::memory_order_acquire))
-            return;
-
-        std::lock_guard<std::mutex> _lock(mutex);
-
-        if(_idx >= _v.size())
-        {
-            size_t new_size = std::max(_v.size(), size_t(1));
-            while(new_size <= _idx)
-                new_size *= 2;  // Geometric growth (doubling)
-            _v.resize(new_size, nullptr);
-            capacity.store(_v.size(), std::memory_order_release);
-        }
+        _v.ensure_capacity(_idx);
     }
 };
 //
