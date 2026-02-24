@@ -38,11 +38,7 @@ file(GLOB_RECURSE _TIMEMORY_BINUTILS_BUILD_BYPRODUCTS_GLOB
      ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/*.a)
 
 set(_TIMEMORY_BINUTILS_BUILD_BYPRODUCTS
-    ${_TIMEMORY_BINUTILS_BUILD_BYPRODUCTS_GLOB}
-    ${PROJECT_BINARY_DIR}/external/tpls/lib/libbfd.a
-    ${PROJECT_BINARY_DIR}/external/tpls/lib/libopcodes.a
-    ${PROJECT_BINARY_DIR}/external/tpls/lib/libiberty.a
-    ${PROJECT_BINARY_DIR}/external/tpls/lib/libsframe.a)
+    ${_TIMEMORY_BINUTILS_BUILD_BYPRODUCTS_GLOB})
 
 foreach(
     _FILE
@@ -50,7 +46,6 @@ foreach(
     ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/opcodes/.libs/libopcodes.a
     ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/libsframe/.libs/libsframe.a
     ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/bfd/.libs/libbfd.a
-    ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/bfd/libbfd.a
     ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/libiberty/libiberty.a)
     if(NOT "${_FILE}" IN_LIST _TIMEMORY_BINUTILS_BUILD_BYPRODUCTS)
         list(APPEND _TIMEMORY_BINUTILS_BUILD_BYPRODUCTS ${_FILE})
@@ -84,11 +79,12 @@ externalproject_add(
         --prefix=${TPL_STAGING_PREFIX} ${_binutils_CONFIG_FLAGS}
     BUILD_COMMAND ${MAKE_COMMAND} all-libiberty all-bfd all-opcodes all-libsframe
     INSTALL_COMMAND ""
+    CONFIGURE_HANDLED_BY_BUILD TRUE
     BUILD_BYPRODUCTS "${_TIMEMORY_BINUTILS_BUILD_BYPRODUCTS}")
 
 add_custom_command(
-    TARGET binutils-external
-    POST_BUILD
+    OUTPUT ${TPL_STAGING_PREFIX}/lib/libbfd.a ${TPL_STAGING_PREFIX}/lib/libopcodes.a
+           ${TPL_STAGING_PREFIX}/lib/libiberty.a ${TPL_STAGING_PREFIX}/lib/libsframe.a
     COMMAND ${CMAKE_COMMAND} ARGS -E make_directory ${TPL_STAGING_PREFIX}/lib
     COMMAND
         install ARGS -C
@@ -97,8 +93,15 @@ add_custom_command(
         ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/libiberty/libiberty.a
         ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external/libsframe/.libs/libsframe.a
         ${TPL_STAGING_PREFIX}/lib/
+    DEPENDS binutils-external
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/external/binutils/src/binutils-external
     COMMENT "Installing binutils...")
+
+add_custom_target(binutils-install ALL DEPENDS
+    ${TPL_STAGING_PREFIX}/lib/libbfd.a
+    ${TPL_STAGING_PREFIX}/lib/libopcodes.a
+    ${TPL_STAGING_PREFIX}/lib/libiberty.a
+    ${TPL_STAGING_PREFIX}/lib/libsframe.a)
 
 foreach(_NAME bfd opcodes iberty sframe)
     set(_FILE
@@ -107,7 +110,7 @@ foreach(_NAME bfd opcodes iberty sframe)
 
     add_library(binutils::${_NAME}-library STATIC IMPORTED)
     set_property(TARGET binutils::${_NAME}-library PROPERTY IMPORTED_LOCATION ${_FILE})
-    add_dependencies(binutils::${_NAME}-library binutils-external)
+    add_dependencies(binutils::${_NAME}-library binutils-install)
 endforeach()
 
 find_package(ZLIB)
