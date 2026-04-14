@@ -70,13 +70,15 @@ externalproject_add(
     binutils-external
     PREFIX ${PROJECT_BINARY_DIR}/external/binutils
     URL ${TIMEMORY_BINUTILS_DOWNLOAD_URL}
-        http://ftpmirror.gnu.org/gnu/binutils/binutils-with-gold-2.46.tar.gz
-        http://mirrors.kernel.org/sourceware/binutils/releases/binutils-with-gold-2.46.tar.gz
+        http://ftpmirror.gnu.org/gnu/binutils/binutils-2.46.0.tar.gz
+        http://mirrors.kernel.org/sourceware/binutils/releases/binutils-2.46.0.tar.gz
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND
-        ${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER} CFLAGS=-fPIC\ -O3
-        CXX=${CMAKE_CXX_COMPILER} CXXFLAGS=-fPIC\ -O3 <SOURCE_DIR>/configure
-        --prefix=${TPL_STAGING_PREFIX} ${_binutils_CONFIG_FLAGS}
+        ${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER}
+        CFLAGS=-fPIC\ -O3\ -Wno-maybe-uninitialized\ -Wno-format-truncation
+        CXX=${CMAKE_CXX_COMPILER}
+        CXXFLAGS=-fPIC\ -O3\ -Wno-maybe-uninitialized\ -Wno-format-truncation
+        <SOURCE_DIR>/configure --prefix=${TPL_STAGING_PREFIX} ${_binutils_CONFIG_FLAGS}
     BUILD_COMMAND ${MAKE_COMMAND} all-libiberty all-bfd all-opcodes all-libsframe
     INSTALL_COMMAND ""
     CONFIGURE_HANDLED_BY_BUILD TRUE
