@@ -70,8 +70,8 @@ externalproject_add(
     binutils-external
     PREFIX ${PROJECT_BINARY_DIR}/external/binutils
     URL ${TIMEMORY_BINUTILS_DOWNLOAD_URL}
-        http://ftpmirror.gnu.org/gnu/binutils/binutils-2.42.tar.gz
-        http://mirrors.kernel.org/sourceware/binutils/releases/binutils-2.42.tar.gz
+        http://ftpmirror.gnu.org/gnu/binutils/binutils-with-gold-2.46.tar.gz
+        http://mirrors.kernel.org/sourceware/binutils/releases/binutils-with-gold-2.46.tar.gz
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND
         ${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER} CFLAGS=-fPIC\ -O3
