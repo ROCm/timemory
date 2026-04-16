@@ -1139,7 +1139,7 @@ elseif(TIMEMORY_USE_LIBUNWIND AND TIMEMORY_BUILD_LIBUNWIND)
         RELATIVE_PATH external/libunwind
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         REPO_URL https://github.com/libunwind/libunwind.git
-        REPO_BRANCH v1.8.3)
+        REPO_BRANCH v1.7.2)
 
     include(ConfigLibunwind)
 else()
