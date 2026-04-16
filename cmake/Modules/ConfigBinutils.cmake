@@ -57,6 +57,12 @@ find_program(
     NAMES make gmake
     PATH_SUFFIXES bin REQUIRED)
 
+# bfd can invoke makeinfo; use a no-op so Texinfo is not required for static libs.
+find_program(_TIMEMORY_BINUTILS_MAKEINFO_NOOP NAMES true)
+if(NOT _TIMEMORY_BINUTILS_MAKEINFO_NOOP)
+    set(_TIMEMORY_BINUTILS_MAKEINFO_NOOP /usr/bin/true)
+endif()
+
 set(binutils_CONFIG_FLAGS
     "--with-system-zlib=yes --without-zstd"
     CACHE STRING "Extra config flags for binutils")
@@ -78,8 +84,11 @@ externalproject_add(
         CFLAGS=-fPIC\ -O3\ -Wno-error
         CXX=${CMAKE_CXX_COMPILER}
         CXXFLAGS=-fPIC\ -O3\ -Wno-error
+        MAKEINFO=${_TIMEMORY_BINUTILS_MAKEINFO_NOOP}
         <SOURCE_DIR>/configure --prefix=${TPL_STAGING_PREFIX} ${_binutils_CONFIG_FLAGS}
-    BUILD_COMMAND ${MAKE_COMMAND} all-libiberty all-bfd all-opcodes all-libsframe
+    BUILD_COMMAND
+        ${MAKE_COMMAND} MAKEINFO=${_TIMEMORY_BINUTILS_MAKEINFO_NOOP} all-libiberty all-bfd
+                        all-opcodes all-libsframe
     INSTALL_COMMAND ""
     CONFIGURE_HANDLED_BY_BUILD TRUE
     BUILD_BYPRODUCTS "${_TIMEMORY_BINUTILS_BUILD_BYPRODUCTS}")
@@ -136,3 +145,4 @@ target_link_libraries(
               $<BUILD_INTERFACE:${CMAKE_DL_LIBS}>)
 
 unset(_TIMEMORY_BINUTILS_BUILD_BYPRODUCTS)
+unset(_TIMEMORY_BINUTILS_MAKEINFO_NOOP)
