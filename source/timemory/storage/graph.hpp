@@ -251,6 +251,34 @@ public:
         using iterator_base::parent;
     };
 
+    // C++20 disambiguation: sibling_iterator and pre_order_iterator are
+    // mutually convertible via iterator_base. Without explicit cross-type
+    // operators, the C++20 rewritten/reversed-candidate rule makes both
+    // same-type operator==/!= viable through implicit conversion of either
+    // operand, which GCC 11/12 reports as "ambiguous overload". Resolve by
+    // providing dedicated cross-type operators that compare the underlying
+    // node pointers, matching the same-type semantics at lines 2496-2528.
+    friend bool operator==(const sibling_iterator& lhs,
+                           const pre_order_iterator& rhs)
+    {
+        return lhs.node == rhs.node;
+    }
+    friend bool operator!=(const sibling_iterator& lhs,
+                           const pre_order_iterator& rhs)
+    {
+        return lhs.node != rhs.node;
+    }
+    friend bool operator==(const pre_order_iterator& lhs,
+                           const sibling_iterator& rhs)
+    {
+        return lhs.node == rhs.node;
+    }
+    friend bool operator!=(const pre_order_iterator& lhs,
+                           const sibling_iterator& rhs)
+    {
+        return lhs.node != rhs.node;
+    }
+
     /// Return iterator to the beginning of the graph.
     inline pre_order_iterator begin() const;
 
