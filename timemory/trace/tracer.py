@@ -75,7 +75,6 @@ Config = _tracer_config
 class Tracer:
     """Provides decorators and context-manager for the timemory tracers"""
 
-    global _default_functor
 
     # static variable
     _conditional_functor = _default_functor

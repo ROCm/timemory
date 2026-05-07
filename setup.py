@@ -90,7 +90,6 @@ def get_bool_option(_args, _name, default=False):
 
 
 def set_cmake_bool_option(opt, enable_opt, disable_opt):
-    global cmake_args
     try:
         if enable_opt:
             cmake_args.append("-D{}:BOOL={}".format(opt, "ON"))
@@ -103,8 +102,6 @@ def set_cmake_bool_option(opt, enable_opt, disable_opt):
 def add_arg_bool_option(
     lc_name, disp_name, default=None, doc="", disp_aliases=[]
 ):
-    global parser
-    global cmake_options
 
     # enable option
     parser.add_argument(

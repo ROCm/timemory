@@ -79,7 +79,6 @@ Config = _profiler_config
 class Profiler:
     """Provides decorators and context-manager for the timemory profilers"""
 
-    global _default_functor
 
     # static variable
     _conditional_functor = _default_functor

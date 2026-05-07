@@ -303,7 +303,6 @@ def plot_impl(args, ai_data, op_data, rank=None, label=None):
 
 
 def run(args, cmd):
-    global _errc
 
     if len(cmd) == 0:
         return
@@ -429,7 +428,6 @@ def run(args, cmd):
 
 
 def try_plot():
-    global _errc
 
     try:
         # look for "--" and interpret anything after that

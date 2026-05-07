@@ -225,7 +225,6 @@ def echo_dart_tag(name, filepath, img_type=plot_parameters.img_type):
 # -------------------------------------------------------------------------------------- #
 def add_plotted_files(name, filepath, echo_dart):
     """Adds a file to the plotted file list and print CDash dart string"""
-    global plotted_files
     if echo_dart:
         filerealpath = os.path.realpath(filepath)
         echo_dart_tag(name, filerealpath)
