@@ -2,9 +2,9 @@ name: continuous-integration
 
 on:
   push:
-    branches: [ master, develop, omnitrace ]
+    branches: [ master, develop, rocprofiler-systems ]
   pull_request:
-    branches: [ master, develop, omnitrace ]
+    branches: [ master, develop, rocprofiler-systems ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -108,7 +108,7 @@ jobs:
           wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
           bash miniconda.sh -b -p ${HOME}/miniconda
           conda config --set always_yes yes --set changeps1 no
-          conda create -c conda-forge -c defaults -n pyctest python=${{ matrix.PYTHON_VERSION }} pyctest
+          conda create -c conda-forge -c defaults -n pyctest python=${{ matrix.PYTHON_VERSION }} pyctest pip
 
       - name: Install Requirements
         run: |
@@ -251,7 +251,7 @@ jobs:
           wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
           bash miniconda.sh -b -p ${HOME}/miniconda
           conda config --set always_yes yes --set changeps1 no
-          conda create -c conda-forge -c defaults -n pyctest python=${{ matrix.PYTHON_VERSION }} pyctest
+          conda create -c conda-forge -c defaults -n pyctest python=${{ matrix.PYTHON_VERSION }} pyctest pip
 
       - name: Install Requirements
         run: |
@@ -369,7 +369,7 @@ jobs:
           wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
           bash miniconda.sh -b -p ${HOME}/miniconda
           conda config --set always_yes yes --set changeps1 no
-          conda create -c defaults -c conda-forge -n pyctest python=${{ matrix.PYTHON_VERSION }} pyctest
+          conda create -c defaults -c conda-forge -n pyctest python=${{ matrix.PYTHON_VERSION }} pyctest pip
 
       - name: Install Requirements
         run: |

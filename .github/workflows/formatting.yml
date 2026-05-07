@@ -3,9 +3,9 @@ name: formatting
 
 on:
   push:
-    branches: [ master, develop, omnitrace ]
+    branches: [ master, develop, rocprofiler-systems ]
   pull_request:
-    branches: [ master, develop ]
+    branches: [ master, develop, rocprofiler-systems ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
