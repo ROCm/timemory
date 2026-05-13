@@ -220,19 +220,19 @@ TIMEMORY_UTILITY_INLINE std::string
 #elif defined(TIMEMORY_UNIX)
 
 TIMEMORY_UTILITY_INLINE std::string
-                        os()
+os()
 {
     return "/";
 }
 
 TIMEMORY_UTILITY_INLINE std::string
-                        inverse()
+inverse()
 {
     return "\\";
 }
 
 TIMEMORY_UTILITY_INLINE std::string
-                        osrepr(std::string _path)
+osrepr(std::string _path)
 {
     // OS-dependent representation
     while(_path.find("\\\\") != std::string::npos)
