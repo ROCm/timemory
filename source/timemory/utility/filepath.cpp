@@ -136,7 +136,9 @@ makedir(std::string _dir, int umask)
                 if(!direxists(_base))
                 {
                     auto _err = _make_dir(_base);
-                    if(_err != 0)
+                    // If two competing MPI ranks call makedir() on same dir
+                    // simultaneously, first rank creates dir, second gets EEXIST
+                    if(_err != 0 && _err != EEXIST)
                     {
                         TIMEMORY_PRINTF_WARNING(stderr, "mkdir(\"%s\", %i) failed: %s\n",
                                                 _base.c_str(), umask, strerror(_err));
