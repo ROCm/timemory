@@ -1,10 +1,10 @@
 #
 #
-# Builds Libunwind
+# Builds libunwind at the CMake build stage (via ExternalProject_Add).
 #
 #
 
-set(TIMEMORY_LIBUNWIND_BUILD_COMMAND)
+include(ExternalProject)
 
 # finds an executable and fails if not found
 macro(timemory_libunwind_find_exe VAR MSG)
@@ -19,188 +19,159 @@ endmacro()
 timemory_libunwind_find_exe(AUTORECONF_EXE "autoreconf" autoreconf)
 timemory_libunwind_find_exe(MAKE_EXE "make / gmake" make gmake)
 
-# copy from source directory to binary directory
-execute_process(
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/external/libunwind
-            ${PROJECT_BINARY_DIR}/external/libunwind)
+find_program(CHRPATH_EXECUTABLE chrpath)
+find_program(PATCHELF_EXECUTABLE patchelf)
+mark_as_advanced(CHRPATH_EXECUTABLE PATCHELF_EXECUTABLE)
 
-# update the SOVERSION of libunwind to avoid picking up system installs
-file(READ ${PROJECT_BINARY_DIR}/external/libunwind/src/Makefile.am
-     timemory_libunwind_src_makefile_am)
-string(REGEX
-       REPLACE "SOVERSION=([0-9]+):([0-9]+):([0-9]+)" "SOVERSION=99:0:0"
-               timemory_libunwind_src_makefile_am "${timemory_libunwind_src_makefile_am}")
-file(WRITE ${PROJECT_BINARY_DIR}/external/libunwind/src/Makefile.am
-     "${timemory_libunwind_src_makefile_am}")
+# -----------------------------------------------------------------------------
+# Paths
+# -----------------------------------------------------------------------------
+set(_libunwind_src ${PROJECT_SOURCE_DIR}/external/libunwind)
+set(_libunwind_work ${PROJECT_BINARY_DIR}/external/libunwind)
+set(_libunwind_build ${_libunwind_work}/source)
+set(_libunwind_install ${_libunwind_work}/install)
+set(_libunwind_libdir ${_libunwind_install}/lib)
+set(_libunwind_incdir ${_libunwind_install}/include)
+set(_libunwind_lib
+    ${_libunwind_libdir}/libunwind${CMAKE_SHARED_LIBRARY_SUFFIX}
+)
 
-# glob the files copied over
-file(GLOB_RECURSE timemory_libunwind_pre_build_files
-     "${PROJECT_SOURCE_DIR}/external/libunwind/*")
-string(REPLACE "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}"
-               timemory_libunwind_pre_build_files "${timemory_libunwind_pre_build_files}")
+# -----------------------------------------------------------------------------
+# Helper scripts written once at configure time, executed at build time.
+# -----------------------------------------------------------------------------
 
-function(timemory_libunwind_execute_process)
-    execute_process(
-        COMMAND ${ARGN}
-        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/external/libunwind
-        OUTPUT_VARIABLE OUT
-        ERROR_VARIABLE ERR
-        RESULT_VARIABLE RET)
+# Patch step: rewrite SOVERSION in src/Makefile.am to avoid clashing with the
+# system libunwind. Operates on the ExternalProject working copy, never on the
+# submodule source.
+set(_libunwind_patch_script ${_libunwind_work}/_patch_soversion.cmake)
+file(
+    WRITE ${_libunwind_patch_script}
+    [=[
+file(READ "${SRC}/src/Makefile.am" _content)
+string(REGEX REPLACE
+    "SOVERSION=([0-9]+):([0-9]+):([0-9]+)" "SOVERSION=99:0:0"
+    _content "${_content}")
+file(WRITE "${SRC}/src/Makefile.am" "${_content}")
+]=]
+)
 
-    if(NOT RET EQUAL 0)
-        string(REPLACE ";" " " _CMD "${ARGN}")
-        message(FATAL_ERROR "'${_CMD}' failed:\nOUTPUT:\n${OUT}\nERROR:\n${ERR}")
+# Post-install step: strip and rewrite RPATH on every installed shared object.
+set(_libunwind_postinstall_script ${_libunwind_work}/_postinstall.cmake)
+file(
+    WRITE ${_libunwind_postinstall_script}
+    [=[
+file(GLOB _libs "${LIBDIR}/*")
+foreach(_lib ${_libs})
+    if(IS_DIRECTORY "${_lib}")
+        continue()
     endif()
-endfunction()
+    if("${_lib}" MATCHES "\\.so($|\\.)")
+        execute_process(COMMAND "${STRIP}" "${_lib}")
+        if(CHRPATH)
+            execute_process(COMMAND "${CHRPATH}" -r "$ORIGIN" "${_lib}")
+        elseif(PATCHELF)
+            execute_process(COMMAND "${PATCHELF}" --set-rpath "$ORIGIN" "${_lib}")
+        else()
+            message(WARNING
+                "Neither chrpath nor patchelf available; skipping rpath fix for ${_lib}")
+        endif()
+    endif()
+endforeach()
+]=]
+)
 
-function(timemory_libunwind_autoreconf)
-    message(STATUS "[timemory] Generating libunwind configure...")
-    timemory_libunwind_execute_process(${AUTORECONF_EXE} -i)
-endfunction()
-
-function(timemory_libunwind_configure)
-    message(STATUS "[timemory] Configuring libunwind...")
-    timemory_libunwind_execute_process(
-        ${CMAKE_COMMAND}
-        -E
-        env
-        CC=${CMAKE_C_COMPILER}
-        CFLAGS=-fPIC\ -O3\ -Wno-unused-result\ -Wno-unused-but-set-variable\ -Wno-cpp
-        CXX=${CMAKE_CXX_COMPILER}
-        CXXFLAGS=-fPIC\ -O3\ -Wno-unused-result\ -Wno-unused-but-set-variable\ -Wno-cpp
-        ./configure
-        --enable-shared=yes
-        --enable-static=no
-        --prefix=${PROJECT_BINARY_DIR}/external/libunwind/install
-        --libdir=${PROJECT_BINARY_DIR}/external/libunwind/install/lib)
-
-    # remove installation if new build
-    timemory_libunwind_execute_process(${MAKE_EXE} clean)
-endfunction()
-
-function(timemory_libunwind_build)
-    message(STATUS "[timemory] Building libunwind...")
-    timemory_libunwind_execute_process(${MAKE_EXE})
-
-    # remove installation if new build
-    file(REMOVE_RECURSE ${PROJECT_BINARY_DIR}/external/libunwind/src/install)
-endfunction()
-
-function(timemory_libunwind_install)
-    message(STATUS "[timemory] Installing libunwind...")
-    timemory_libunwind_execute_process(${MAKE_EXE} install)
-endfunction()
-
-if(NOT EXISTS ${PROJECT_BINARY_DIR}/external/libunwind/configure)
-    timemory_libunwind_autoreconf()
-    timemory_libunwind_configure()
-    timemory_libunwind_build()
-elseif(NOT EXISTS ${PROJECT_BINARY_DIR}/external/libunwind/Makefile)
-    timemory_libunwind_configure()
-    timemory_libunwind_build()
-elseif(NOT EXISTS ${PROJECT_BINARY_DIR}/external/libunwind/src/.libs)
-    timemory_libunwind_configure()
-    timemory_libunwind_build()
-endif()
-
-if(NOT EXISTS ${PROJECT_BINARY_DIR}/external/libunwind/install)
-    timemory_libunwind_install()
-endif()
-
-file(GLOB_RECURSE timemory_libunwind_post_build_files
-     "${PROJECT_BINARY_DIR}/external/libunwind/*")
-
-set(TIMEMORY_LIBUNWIND_BUILD_BYPRODUCTS ${timemory_libunwind_post_build_files})
-list(REMOVE_ITEM TIMEMORY_LIBUNWIND_BUILD_BYPRODUCTS
-     ${timemory_libunwind_pre_build_files})
-
-add_custom_target(
+# -----------------------------------------------------------------------------
+# ExternalProject_Add: download (copy from submodule), patch, configure, build,
+# install. All steps run at build time.
+# -----------------------------------------------------------------------------
+ExternalProject_Add(
     build-timemory-libunwind
-    COMMAND ${AUTORECONF_EXE} -i
+    PREFIX ${_libunwind_work}
+    SOURCE_DIR ${_libunwind_build}
+    BUILD_IN_SOURCE 1
+    DOWNLOAD_COMMAND
+        ${CMAKE_COMMAND} -E copy_directory ${_libunwind_src} ${_libunwind_build}
+    UPDATE_COMMAND ""
+    PATCH_COMMAND
+        ${CMAKE_COMMAND} -DSRC=${_libunwind_build} -P ${_libunwind_patch_script}
+    CONFIGURE_COMMAND
+        ${AUTORECONF_EXE} -i
     COMMAND
         ${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER}
         CFLAGS=-fPIC\ -O3\ -Wno-unused-result\ -Wno-unused-but-set-variable\ -Wno-cpp
         CXX=${CMAKE_CXX_COMPILER}
         CXXFLAGS=-fPIC\ -O3\ -Wno-unused-result\ -Wno-unused-but-set-variable\ -Wno-cpp
         ./configure --enable-shared=yes --enable-static=no
-        --prefix=${PROJECT_BINARY_DIR}/external/libunwind/install
-    COMMAND ${MAKE_EXE}
-    COMMAND ${MAKE_EXE} install
-    COMMENT "Building libunwind..."
-    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/external/libunwind)
+        --prefix=${_libunwind_install} --libdir=${_libunwind_libdir}
+    BUILD_COMMAND ${MAKE_EXE}
+    INSTALL_COMMAND ${MAKE_EXE} install
+    COMMAND
+        ${CMAKE_COMMAND} -DLIBDIR=${_libunwind_libdir} -DSTRIP=${CMAKE_STRIP}
+        -DCHRPATH=${CHRPATH_EXECUTABLE} -DPATCHELF=${PATCHELF_EXECUTABLE} -P
+        ${_libunwind_postinstall_script}
+    BUILD_BYPRODUCTS ${_libunwind_lib}
+    LOG_DOWNLOAD ON
+    LOG_PATCH ON
+    LOG_CONFIGURE ON
+    LOG_BUILD ON
+    LOG_INSTALL ON
+)
 
-add_custom_target(
-    clean-timemory-libunwind
-    COMMAND ${CMAKE_COMMAND} -E rm -f ${TIMEMORY_LIBUNWIND_BUILD_BYPRODUCTS}
-    COMMENT "Cleaning libunwind..."
-    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/external/libunwind)
-
-add_dependencies(build-timemory-libunwind clean-timemory-libunwind)
-
+# -----------------------------------------------------------------------------
+# Install rules. Evaluated at `cmake --install` time, so they pick up whatever
+# the build step produced.
+# -----------------------------------------------------------------------------
 if(TIMEMORY_INSTALL_HEADERS)
-    file(GLOB libunwind_headers
-         "${PROJECT_BINARY_DIR}/external/libunwind/install/include/*.h")
-
-    foreach(_HEADER ${libunwind_headers})
-        install(
-            FILES ${_HEADER}
-            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/timemory/libunwind
-            OPTIONAL)
-    endforeach()
+    install(
+        DIRECTORY ${_libunwind_incdir}/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/timemory/libunwind
+        FILES_MATCHING
+        PATTERN "*.h"
+    )
 endif()
 
-file(GLOB libunwind_libs
-     "${PROJECT_BINARY_DIR}/external/libunwind/install/${CMAKE_INSTALL_LIBDIR}/*")
-
-foreach(_LIB ${libunwind_libs})
-    if(IS_DIRECTORY ${_LIB})
-        continue()
-    endif()
-
-    if("${_LIB}" MATCHES "\\.so($|\\.)")
-        execute_process(COMMAND ${CMAKE_STRIP} ${_LIB})
-        find_program(CHRPATH_EXECUTABLE chrpath)
-        find_program(PATCHELF_EXECUTABLE patchelf)
-
-        if(CHRPATH_EXECUTABLE)
-            execute_process(COMMAND ${CHRPATH_EXECUTABLE} -r "$ORIGIN" ${_LIB})
-        elseif(PATCHELF_EXECUTABLE)
-            execute_process(COMMAND ${PATCHELF_EXECUTABLE} --set-rpath "$ORIGIN" ${_LIB})
-        else()
-            message(
-                AUTHOR_WARNING
-                    "[timemory] Neither chrpath nor patchelf found. Skipping rpath modification for libunwind."
-                )
-        endif()
-    endif()
-
-    install(
-        FILES ${_LIB}
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/timemory/libunwind
-        OPTIONAL)
-endforeach()
+install(
+    DIRECTORY ${_libunwind_libdir}/
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/timemory/libunwind
+    FILES_MATCHING
+    PATTERN "*${CMAKE_SHARED_LIBRARY_SUFFIX}*"
+    PATTERN "pkgconfig" EXCLUDE
+)
 
 install(
-    DIRECTORY ${PROJECT_BINARY_DIR}/external/libunwind/install/lib/pkgconfig
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/timemory/libunwind/pkgconfig
-    OPTIONAL)
+    DIRECTORY ${_libunwind_libdir}/pkgconfig
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/timemory/libunwind
+    OPTIONAL
+)
+
+# -----------------------------------------------------------------------------
+# Interface target wiring. The generator-expression paths are resolved at
+# compile/link time, so the underlying files don't need to exist at configure.
+# The add_dependencies() edge ensures the ExternalProject runs before any
+# consumer of timemory-libunwind is compiled or linked.
+# -----------------------------------------------------------------------------
+add_dependencies(timemory-libunwind build-timemory-libunwind)
 
 # Add include directories with BEFORE to ensure they come first in include search path
 # This ensures GNU libunwind headers are found before LLVM libunwind headers
 target_include_directories(
     timemory-libunwind BEFORE
-    INTERFACE $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/external/libunwind/install/include>
-              $<INSTALL_INTERFACE:include/timemory/libunwind>)
+    INTERFACE $<BUILD_INTERFACE:${_libunwind_incdir}>
+              $<INSTALL_INTERFACE:include/timemory/libunwind>
+)
 target_link_directories(
     timemory-libunwind
     INTERFACE
-    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/external/libunwind/install/${CMAKE_INSTALL_LIBDIR}>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}/timemory/libunwind>)
+    $<BUILD_INTERFACE:${_libunwind_libdir}>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}/timemory/libunwind>
+)
 target_link_libraries(
     timemory-libunwind
     INTERFACE
-        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/external/libunwind/install/${CMAKE_INSTALL_LIBDIR}/libunwind${CMAKE_SHARED_LIBRARY_SUFFIX}>
+        $<BUILD_INTERFACE:${_libunwind_lib}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/timemory/libunwind/libunwind${CMAKE_SHARED_LIBRARY_SUFFIX}>
-    )
-timemory_target_compile_definitions(timemory-libunwind INTERFACE TIMEMORY_USE_LIBUNWIND
-                                    UNW_LOCAL_ONLY)
+)
+timemory_target_compile_definitions(
+    timemory-libunwind
+    INTERFACE TIMEMORY_USE_LIBUNWIND UNW_LOCAL_ONLY
+)
