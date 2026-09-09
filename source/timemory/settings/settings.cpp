@@ -48,6 +48,7 @@
 #include "timemory/variadic/macros.hpp"
 
 #include <cctype>
+#include <cstdlib>
 #include <exception>
 #include <fstream>
 #include <initializer_list>
@@ -1966,7 +1967,12 @@ settings::read(std::istream& ifs, std::string inp)
             TIMEMORY_PRINT_HERE("Exception reading %s :: %s", _inp.c_str(), e.what());
 #if defined(TIMEMORY_INTERNAL_TESTING)
             TIMEMORY_CONDITIONAL_DEMANGLED_BACKTRACE(true, 8);
+            return false;
 #endif
+            // Fatal for rocprof-sys -c: ROCPROFSYS_CONFIG_FILE means an explicit config
+            // was requested; returning false left rocprof-sys half-initialized.
+            if(std::getenv(TIMEMORY_SETTINGS_KEY("CONFIG_FILE")))
+                std::exit(EXIT_FAILURE);
             return false;
         }
         return true;
@@ -1975,9 +1981,9 @@ settings::read(std::istream& ifs, std::string inp)
     else if(inp.find(".xml") != std::string::npos || inp == "xml")
     {
         using policy_type = policy::input_archive<cereal::XMLInputArchive, TIMEMORY_API>;
-        auto ia           = policy_type::get(ifs);
         try
         {
+            auto ia = policy_type::get(ifs);
             ia->setNextName(TIMEMORY_PROJECT_NAME);
             ia->startNode();
             {
@@ -2000,7 +2006,12 @@ settings::read(std::istream& ifs, std::string inp)
             TIMEMORY_PRINT_HERE("Exception reading %s :: %s", _inp.c_str(), e.what());
 #    if defined(TIMEMORY_INTERNAL_TESTING)
             TIMEMORY_CONDITIONAL_DEMANGLED_BACKTRACE(true, 8);
+            return false;
 #    endif
+            // Fatal for rocprof-sys -c: ROCPROFSYS_CONFIG_FILE means an explicit config
+            // was requested; returning false left rocprof-sys half-initialized.
+            if(std::getenv(TIMEMORY_SETTINGS_KEY("CONFIG_FILE")))
+                std::exit(EXIT_FAILURE);
             return false;
         }
         return true;
