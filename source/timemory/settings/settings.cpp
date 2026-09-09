@@ -1968,11 +1968,12 @@ settings::read(std::istream& ifs, std::string inp)
 #if defined(TIMEMORY_INTERNAL_TESTING)
             TIMEMORY_CONDITIONAL_DEMANGLED_BACKTRACE(true, 8);
             return false;
-#else
-            // Fatal: invalid ROCPROFSYS_CONFIG_FILE (-c) must not continue; returning
-            // false left rocprof-sys half-initialized and led to SIGABRT.
-            std::exit(EXIT_FAILURE);
 #endif
+            // Fatal for rocprof-sys -c: ROCPROFSYS_CONFIG_FILE means an explicit config
+            // was requested; returning false left rocprof-sys half-initialized.
+            if(std::getenv(TIMEMORY_SETTINGS_KEY("CONFIG_FILE")))
+                std::exit(EXIT_FAILURE);
+            return false;
         }
         return true;
     }
@@ -2006,12 +2007,12 @@ settings::read(std::istream& ifs, std::string inp)
 #    if defined(TIMEMORY_INTERNAL_TESTING)
             TIMEMORY_CONDITIONAL_DEMANGLED_BACKTRACE(true, 8);
             return false;
-#    else
-            // Fatal: invalid ROCPROFSYS_CONFIG_FILE (-c) must not continue; returning
-            // false left rocprof-sys half-initialized and led to SIGABRT
-            // (AIPROFSYST-575).
-            std::exit(EXIT_FAILURE);
 #    endif
+            // Fatal for rocprof-sys -c: ROCPROFSYS_CONFIG_FILE means an explicit config
+            // was requested; returning false left rocprof-sys half-initialized.
+            if(std::getenv(TIMEMORY_SETTINGS_KEY("CONFIG_FILE")))
+                std::exit(EXIT_FAILURE);
+            return false;
         }
         return true;
     }
