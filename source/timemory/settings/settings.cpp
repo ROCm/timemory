@@ -1946,9 +1946,9 @@ settings::read(std::istream& ifs, std::string inp)
     if(inp.find(".json") != std::string::npos || inp == "json")
     {
         using policy_type = policy::input_archive<cereal::JSONInputArchive, TIMEMORY_API>;
-        auto ia           = policy_type::get(ifs);
         try
         {
+            auto ia = policy_type::get(ifs);
             ia->setNextName(TIMEMORY_PROJECT_NAME);
             ia->startNode();
             {
@@ -1972,10 +1972,6 @@ settings::read(std::istream& ifs, std::string inp)
 #if defined(TIMEMORY_INTERNAL_TESTING)
             TIMEMORY_CONDITIONAL_DEMANGLED_BACKTRACE(true, 8);
             return false;
-#else
-            // Fatal: invalid ROCPROFSYS_CONFIG_FILE (-c) must not continue; returning
-            // false left rocprof-sys half-initialized and led to SIGABRT.
-            std::exit(EXIT_FAILURE);
 #endif
         }
         return true;
@@ -2010,11 +2006,6 @@ settings::read(std::istream& ifs, std::string inp)
 #    if defined(TIMEMORY_INTERNAL_TESTING)
             TIMEMORY_CONDITIONAL_DEMANGLED_BACKTRACE(true, 8);
             return false;
-#    else
-            // Fatal: invalid ROCPROFSYS_CONFIG_FILE (-c) must not continue; returning
-            // false left rocprof-sys half-initialized and led to SIGABRT
-            // (AIPROFSYST-575).
-            std::exit(EXIT_FAILURE);
 #    endif
         }
         return true;
