@@ -1971,8 +1971,8 @@ settings::read(std::istream& ifs, std::string inp)
             TIMEMORY_PRINT_HERE("Exception reading %s :: %s", _inp.c_str(), e.what());
 #if defined(TIMEMORY_INTERNAL_TESTING)
             TIMEMORY_CONDITIONAL_DEMANGLED_BACKTRACE(true, 8);
-            return false;
 #endif
+            return false;
         }
         return true;
     }
@@ -2005,8 +2005,8 @@ settings::read(std::istream& ifs, std::string inp)
             TIMEMORY_PRINT_HERE("Exception reading %s :: %s", _inp.c_str(), e.what());
 #    if defined(TIMEMORY_INTERNAL_TESTING)
             TIMEMORY_CONDITIONAL_DEMANGLED_BACKTRACE(true, 8);
-            return false;
 #    endif
+            return false;
         }
         return true;
     }
