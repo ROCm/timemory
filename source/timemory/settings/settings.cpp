@@ -48,7 +48,6 @@
 #include "timemory/variadic/macros.hpp"
 
 #include <cctype>
-#include <cstdlib>
 #include <exception>
 #include <fstream>
 #include <initializer_list>
