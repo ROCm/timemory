@@ -93,8 +93,7 @@ endfunction()
 
 # backport of upstream libunwind 9538c8f "Fix a deadlock in find_reg_state". The copy
 # above restores the pristine source on every configure, so the patch is applied every
-# time. An existing libunwind build is not rebuilt: delete the build copy to pick up the
-# patch.
+# time.
 message(STATUS "[timemory] Patching libunwind...")
 timemory_libunwind_find_exe(PATCH_EXE "patch" patch)
 timemory_libunwind_execute_process(
