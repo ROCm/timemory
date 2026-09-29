@@ -19,26 +19,6 @@ endmacro()
 timemory_libunwind_find_exe(AUTORECONF_EXE "autoreconf" autoreconf)
 timemory_libunwind_find_exe(MAKE_EXE "make / gmake" make gmake)
 
-# local patches applied to the libunwind build copy
-set(TIMEMORY_LIBUNWIND_PATCHES
-    ${PROJECT_SOURCE_DIR}/cmake/Patches/libunwind-9538c8f-find-reg-state-deadlock.patch)
-
-# libunwind is only rebuilt when configure/Makefile/src/.libs are missing, so start from a
-# clean build copy whenever the set of patches changes
-set(_libunwind_patch_hashes)
-foreach(_patch ${TIMEMORY_LIBUNWIND_PATCHES})
-    file(SHA256 ${_patch} _hash)
-    list(APPEND _libunwind_patch_hashes ${_hash})
-endforeach()
-set(_libunwind_patch_stamp ${PROJECT_BINARY_DIR}/external/libunwind-patches.stamp)
-set(_libunwind_old_patch_hashes)
-if(EXISTS ${_libunwind_patch_stamp})
-    file(READ ${_libunwind_patch_stamp} _libunwind_old_patch_hashes)
-endif()
-if(NOT "${_libunwind_old_patch_hashes}" STREQUAL "${_libunwind_patch_hashes}")
-    file(REMOVE_RECURSE ${PROJECT_BINARY_DIR}/external/libunwind)
-endif()
-
 # copy from source directory to binary directory
 execute_process(
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/external/libunwind
@@ -111,22 +91,15 @@ function(timemory_libunwind_install)
     timemory_libunwind_execute_process(${MAKE_EXE} install)
 endfunction()
 
-# apply local patches: skip a patch that is already applied, fail configure otherwise
-if(TIMEMORY_LIBUNWIND_PATCHES)
-    timemory_libunwind_find_exe(PATCH_EXE "patch" patch)
-endif()
-foreach(_patch ${TIMEMORY_LIBUNWIND_PATCHES})
-    execute_process(
-        COMMAND ${PATCH_EXE} --dry-run --reverse --silent --force -p1 -i ${_patch}
-        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/external/libunwind
-        RESULT_VARIABLE _reverse
-        OUTPUT_QUIET ERROR_QUIET)
-    if(NOT _reverse EQUAL 0)
-        message(STATUS "[timemory] Patching libunwind: ${_patch}")
-        timemory_libunwind_execute_process(${PATCH_EXE} -p1 --forward -i ${_patch})
-    endif()
-endforeach()
-file(WRITE ${_libunwind_patch_stamp} "${_libunwind_patch_hashes}")
+# backport of upstream libunwind 9538c8f "Fix a deadlock in find_reg_state". The copy
+# above restores the pristine source on every configure, so the patch is applied every
+# time. An existing libunwind build is not rebuilt: delete the build copy to pick up the
+# patch.
+message(STATUS "[timemory] Patching libunwind...")
+timemory_libunwind_find_exe(PATCH_EXE "patch" patch)
+timemory_libunwind_execute_process(
+    ${PATCH_EXE} -p1 --forward -i
+    ${PROJECT_SOURCE_DIR}/cmake/Patches/libunwind-9538c8f-find-reg-state-deadlock.patch)
 
 if(NOT EXISTS ${PROJECT_BINARY_DIR}/external/libunwind/configure)
     timemory_libunwind_autoreconf()
