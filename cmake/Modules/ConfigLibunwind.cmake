@@ -91,6 +91,15 @@ function(timemory_libunwind_install)
     timemory_libunwind_execute_process(${MAKE_EXE} install)
 endfunction()
 
+# backport of upstream libunwind 9538c8f "Fix a deadlock in find_reg_state". The copy
+# above restores the pristine source on every configure, so the patch is applied every
+# time.
+message(STATUS "[timemory] Patching libunwind...")
+timemory_libunwind_find_exe(PATCH_EXE "patch" patch)
+timemory_libunwind_execute_process(
+    ${PATCH_EXE} -p1 --forward -i
+    ${PROJECT_SOURCE_DIR}/cmake/Patches/libunwind-9538c8f-find-reg-state-deadlock.patch)
+
 if(NOT EXISTS ${PROJECT_BINARY_DIR}/external/libunwind/configure)
     timemory_libunwind_autoreconf()
     timemory_libunwind_configure()
