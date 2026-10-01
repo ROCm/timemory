@@ -93,7 +93,7 @@ jobs:
           env | sort
 
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           clean: true
 
@@ -236,7 +236,7 @@ jobs:
           env | sort
 
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           clean: true
 
@@ -360,7 +360,7 @@ jobs:
           env | sort
 
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           clean: true
 
@@ -379,7 +379,7 @@ jobs:
           python -m pip install pytest
 
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           clean: true
 
