@@ -72,12 +72,22 @@ mark_as_advanced(binutils_CONFIG_FLAGS)
 string(REPLACE " " ";" _binutils_CONFIG_FLAGS "${binutils_CONFIG_FLAGS}")
 
 include(ExternalProject)
+# Mixing a local path with remote URLs breaks ExternalProject_Add.
+set(TIMEMORY_BINUTILS_DOWNLOAD_URL
+    ""
+    CACHE STRING
+          "One remote URL, semicolon-separated URLs, or a local path (do not mix)")
+if(TIMEMORY_BINUTILS_DOWNLOAD_URL)
+    set(_TIMEMORY_BINUTILS_URLS ${TIMEMORY_BINUTILS_DOWNLOAD_URL})
+else()
+    set(_TIMEMORY_BINUTILS_URLS
+        https://ftpmirror.gnu.org/gnu/binutils/binutils-2.46.0.tar.gz
+        https://mirrors.kernel.org/sourceware/binutils/releases/binutils-2.46.0.tar.gz)
+endif()
 externalproject_add(
     binutils-external
     PREFIX ${PROJECT_BINARY_DIR}/external/binutils
-    URL ${TIMEMORY_BINUTILS_DOWNLOAD_URL}
-        https://ftpmirror.gnu.org/gnu/binutils/binutils-2.46.0.tar.gz
-        https://mirrors.kernel.org/sourceware/binutils/releases/binutils-2.46.0.tar.gz
+    URL ${_TIMEMORY_BINUTILS_URLS}
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND
         ${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER}
