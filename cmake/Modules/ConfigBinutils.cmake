@@ -72,6 +72,11 @@ mark_as_advanced(binutils_CONFIG_FLAGS)
 string(REPLACE " " ";" _binutils_CONFIG_FLAGS "${binutils_CONFIG_FLAGS}")
 
 include(ExternalProject)
+# Mixing a local path with remote URLs breaks ExternalProject_Add.
+set(TIMEMORY_BINUTILS_DOWNLOAD_URL
+    ""
+    CACHE STRING
+          "One remote URL, semicolon-separated URLs, or a local path (do not mix)")
 if(TIMEMORY_BINUTILS_DOWNLOAD_URL)
     set(_TIMEMORY_BINUTILS_URLS ${TIMEMORY_BINUTILS_DOWNLOAD_URL})
 else()
