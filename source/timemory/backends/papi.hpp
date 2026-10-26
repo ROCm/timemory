@@ -509,6 +509,11 @@ init()
 {
     // initialize the PAPI library
 #if defined(TIMEMORY_USE_PAPI)
+    // available_events_info() calls init_library() on its own. That makes a later
+    // init() observe PAPI as already initialized and skip the component map, so
+    // get_event_info() misses events such as net::: and callers fall back to the
+    // raw symbol. Initialize the library only when needed, and build the map
+    // whenever it is still empty.
     if(!is_initialized())
     {
         details::init_library();
@@ -517,7 +522,12 @@ init()
             TIMEMORY_PRINTF(
                 stderr,
                 "[timemory][papi] Warning!! PAPI library not fully initialized!\n");
-        else
+    }
+
+    if(working())
+    {
+        auto& _info_map = get_component_info_map();
+        if(_info_map && _info_map->empty())
         {
             if(details::generate_component_info() == 0)
             {
